@@ -1,0 +1,159 @@
+
+##########################################################################################################
+#### UI SECTION 
+##########################################################################################################
+
+ui <- fluidPage(
+  useShinyjs(),
+  titlePanel("LC 384-well plate sequence generator - Walker Lab"), 
+  tabsetPanel(
+    id = "tabs",
+    
+    # First tab - File Upload
+    tabPanel(
+      "1. Upload Plate Scans",
+      sidebarLayout(
+        sidebarPanel(
+          tags$div(
+            style = "padding: 10px; background-color: #e8f4f8; border: 1px solid #d1e0e0; border-radius: 5px; margin-bottom: 15px;",
+            tags$p(tags$strong("Note:"), "Upload 1-4 plate files.")
+          ),
+          fileInput("plate1", "Upload Plate 1 CSV (optional)", accept = ".csv"),
+          uiOutput("plate1_type_ui"),
+          fileInput("plate2", "Upload Plate 2 CSV (optional)", accept = ".csv"),
+          uiOutput("plate2_type_ui"),
+          fileInput("plate3", "Upload Plate 3 CSV (optional)", accept = ".csv"),
+          uiOutput("plate3_type_ui"),
+          fileInput("plate4", "Upload Plate 4 CSV (optional)", accept = ".csv"),
+          uiOutput("plate4_type_ui"),
+          actionButton("process", "Process Files", class = "btn-primary")
+        ),
+        mainPanel(
+          fluidRow(
+            column(12,
+                   br(),
+                   br(),
+                   h4("Purpose:"),
+                   p(".csv plate scans + study inventory + user input = LC sequence list!"),
+                   br(),
+                   br(),
+                   br(),
+                   h4("Instructions:"),
+                   p("1. Upload the Micronic RackData .csv files for each plate. Specify sample/QAQC plate."),
+                   p("2. I will order the Matrix IDs into a 384-well plate. Check for accuracy."),
+                   p("3. I will search the study inventory and label QAQC samples and check Matrix IDs. Check for accuracy."),
+                   p("4. Add LC Run Info and I will generate a sequence list."),
+                   br(),
+                   br(),
+                   h4("Progress Console:"),
+                   br()
+            )
+          ),
+          verbatimTextOutput("debug_output") %>%
+            tagAppendAttributes(style = "height: 200px; background-color: #f8f9fa; border: 1px solid #ddd; padding: 8px; overflow-y: auto;")
+        )
+      )
+    ), # end first tab
+    
+    tabPanel(
+      "2. Check Layout",
+      fluidRow(
+        column(12,
+               div(style = "margin-bottom: 20px; display: flex; align-items: center; gap: 15px;",
+                   div(style = "flex-grow: 1;",
+                       radioButtons("order_by", "Order samples by:", 
+                                    choices = c("Order by column of each plate" = "Col_order_by_plate", 
+                                                "Order by row of each plate" = "Row_order_by_plate"),
+                                    selected = "Col_order_by_plate",
+                                    inline = TRUE)
+                   ),
+                   div(style = "display: flex; gap: 10px; align-items: center;",
+                       div(style = "margin-left: 15px;",
+                           actionButton("gototab3", "Next tab", class = "btn-primary", 
+                                        style = "font-size: 16px; padding: 8px 20px;")
+                       )
+                   )
+               )
+        )
+      ),
+      fluidRow(
+        column(6,
+               tableOutput("result_table1")
+        ),
+        column(6,
+               h4("96-Well Matrix Rack Layouts"),
+               plotOutput("plate1"),
+               br(),
+               plotOutput("plate2"),
+               br(),
+               plotOutput("plate3"),
+               br(),
+               plotOutput("plate4")
+        )
+      )
+    ), # end second tab
+    
+    tabPanel(
+      "3. Connect to inventory",
+      fluidRow(
+        column(12,
+               div(style = "display: flex; align-items: center; margin-bottom: 10px;",
+                   div(style = "flex-grow: 1",
+                       br(),
+                       h4("Click below to match Matrix IDs from study inventory. Check for accuracy. Then update database."),
+                       actionButton("match_samples", "Step 1: Match IDs to inventory", class = "btn-primary"),
+                       actionButton("add_matrix_ids", "Step 2: Update inventory", class = "btn-info"),
+                       br(), br(), br(), br(),
+                       radioButtons("order_by", "Order samples by:", 
+                                    choices = c("Order by column of each plate" = "Col_order_by_plate", 
+                                                "Order by row of each plate" = "Row_order_by_plate"),
+                                    selected = "Col_order_by_plate",
+                                    inline = TRUE)
+                   ),
+                   uiOutput("matchstatus")
+               )
+        ) #end top row
+      ),
+      # NEXT ROW - Fixed the structure here
+      fluidRow(
+        column(6, 
+               tableOutput("result_table2")
+        ),
+        column(6,
+               h4("QAQC Plate Layout - Labeled"),
+               uiOutput("qaqc_plate_container")
+        )
+      )
+    ), # end third tab
+    
+    tabPanel(
+      "4. Generate sequence list",
+      fluidRow(
+        column(8, 
+               h3("Enter Run Info"),
+               uiOutput("run_info"),
+        ),
+        column(4,
+               h3("Generate Sequence List"),
+               uiOutput("generate_list")
+        )
+      ),
+      # Add the debug console container below
+      fluidRow(
+        column(12,
+               h3("Progress/Debug Console", style = "margin-top: 30px;"),
+               div(
+                 style = "position: relative;",
+                 actionButton("clear_debug", "Clear Console", 
+                              style = "position: absolute; right: 10px; top: 0;"),
+                 verbatimTextOutput("debug_console") %>%
+                   tagAppendAttributes(style = "height: 300px; overflow-y: auto; background-color: #f8f9fa; 
+                                        border: 1px solid #ddd; padding: 8px; 
+                                        font-family: monospace; white-space: pre;
+                                        margin-top: 35px; font-size: 12px;")
+               )
+        )
+      )
+    ) # end fourth tab
+  ) # end tabset panel
+) # end ui
