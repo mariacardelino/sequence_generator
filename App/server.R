@@ -3,6 +3,116 @@
 #### SERVER SECTION - changed to work with write_list.R
 ##########################################################################################################
 
+## TO-DO ####
+
+# Remove all filepaths from the input variables and the code below. Check all scripts for filepaths
+# ^ To accomplish this, must add new input variables for choosing a filepath from the local machine for: 
+    #' where the filepath for all 8 methods are (normal, PFAS, nonPFAS MSMS for C18 and HILIC. 2 extra for the first and last batch.)
+      #' add these to 'Methods' folder in app, ex: "App/Methods/240408_C18pos_120k_BottomPump_Channel1"
+    #' where the user wants the sequence list to export
+    #' where the project filepath is (Field 6), E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515/
+  
+# Take notes about how each type of sample (study sample, pool, cal curve, etc) is counted and processed
+
+# Make the sample size completely adjustable. Keep the same goup size. The code should caclulate how many smapes there are and then it should know how many 
+  # groups of QAQCs to put in between them. For exampple, if there are only 5 smaples, run the first QAQCs, then the 5 samples, then the next QAQCs. 
+  # If there are 120 samples, it will do groups of (however many we set it to) with QAQCs in between until it runs out of samples, then it finishes.
+
+  # Add new input variables 
+      #' how many MSMS injections and how far apart
+      #' injection volume (Field 10)
+    
+# Add changes for first and last batch
+
+# Start moving to OpenSpecimen. Keep original version, make a copy with the API
+
+ 
+############### NOTES ABOUT SAMPLE LOGIC BY TYPE:
+## Below is all done by final_data$Sample_ID
+
+#' total_count: rows that are not NA in Sample_ID** FIX
+#' cal_curves: rows that start with 'FBS'
+#' cc_count: number of rows that start with 'FBS'
+#' MDL handling: code removes duplicate cal curve from cal_curves and assigns duplicate to mdls
+#' pools: rows that start with 'HRE'
+#' pool_count: number of rows of pools
+#' pools1: pools that start with HRE and have .p1
+#' pools2: pools that start with HRE and have .p2
+#' waters: rows that start with 'Water'
+#' water_count: number of rows of waters
+#' amaps: rows that start with 'AM'
+#' amap_count: number of rows of amaps
+#' nists: rows that start with 'NIST'
+#' nist_count: number of rows of nists
+#' 
+#' ## STUDY SAMPLES LOGIC #################
+#' identify with an A or a K followed by 7 numbers in final_data$Sample_ID
+#' 
+#' if order_pattern is by row, arrange in row order
+#' 
+#' total_samples: sum of cc_count + water_count + amap_count + nist_count + study_sample_count
+#' 
+#' ^ check against total_count, mismatches
+
+### MSMS LOGIC
+# if study_samples$pfms == TRUE then there is a PFAS MSMS run after that sample
+# if study_samples$nonpfms == TRUE then there is a nonPFAS MSMS run after that sample
+
+# for study samples: 
+# batch_size: HARD-CODED TO 20 currently *** FIX - make variable??
+# for each chunk of samples:
+  #' chunk 1: for (i in 1:batch_size), write pos and neg line at i. if msms, add those lines.
+    #' match the 384-wp position and find that line in the pre-written msms lines, write that.
+  #' chunk 2: for (i in ((batch_size+1):(batch_size*2)))
+  #' chunk 3: for (i in ((2*batch_size+1):(batch_size*3)))
+  #' chunk 4: for (i in ((3*batch_size+1):(batch_size*4))) and so on until 8 groups of 20 (160)
+
+
+######### ORDER
+# 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
+# 1 water (out of 2)
+# 1 NIST (out of 1)
+# 1 AMAP  (out of 2)
+
+# Pool 1 
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2 
+
+# 1 'blank' 
+# CAL CURVE (1-8/8)
+# 1 'blank' 
+
+# Pool 1 (6/10)
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2
+# 20 study samples (160 total)
+# Pool 1
+# Pool 2 
+
+# 1 AMAP (2/2)
+# MDL (Cal curve)
+# Water (2/2)
+# 1 real blank 
+
 server <- function(input, output, session) {
   
   # Function to read CSV files with dynamic header detection
