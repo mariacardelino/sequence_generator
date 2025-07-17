@@ -5,6 +5,11 @@
 
 ## TO-DO ####
 
+## 7/17 learn about shinyfiles, nothing is happening for folder path selection.
+# do something with the passed on variables method_path, project_path, output_path
+
+#########################
+
 # Remove all filepaths from the input variables and the code below. Check all scripts for filepaths
 # ^ To accomplish this, must add new input variables for choosing a filepath from the local machine for: 
     #' where the filepath for all 8 methods are (normal, PFAS, nonPFAS MSMS for C18 and HILIC. 2 extra for the first and last batch.)
@@ -199,6 +204,7 @@ server <- function(input, output, session) {
       )
   )
   
+
   #Folder paths for selected locations - 7/16
   selected_paths <- reactiveValues(
     project = NULL,
@@ -1163,9 +1169,7 @@ server <- function(input, output, session) {
                radioButtons("first_last_batch", "First or last batch? (still in development)",
                             choices = c("TRUE" = TRUE, "FALSE" = FALSE),
                             selected = FALSE,
-                            inline = TRUE) #,
-               
-              # come back and add rack number input and what else?
+                            inline = TRUE) 
         )
       ),
       
@@ -1204,21 +1208,39 @@ server <- function(input, output, session) {
   })
   
   ## ADD 7/16 - User-selected folder paths
+  roots <- c("C Drive" = "C:/")
+  
+  # Example making directory at base of computer
+  # server <- function(input, output){
+  #   volumes = getVolumes()() # this makes the directory at the base of your computer.
+  #   observe({
+  #     shinyDirChoose(input, 'folder', roots=volumes, filetypes=c('', 'txt'))
+  #     print(input$folder)
+  #   })
+  # }
+  
+  # Enable folder selection for each input
+  shinyDirChoose(input, 'project_path', roots = roots, session = session)
+  shinyDirChoose(input, 'method_path', roots = roots, session = session)
+  shinyDirChoose(input, 'output_path', roots = roots, session = session)
+  
+  # Observe selections and convert to full paths
   observe({
-    if (!is.null(input$project_path)) {
+    if (is.list(input$project_path) && !is.null(input$project_path$path)) {
       selected_paths$project <- parseDirPath(roots, input$project_path)
       cat("Selected project path:", selected_paths$project, "\n")
     }
-    if (!is.null(input$method_path)) {
+    
+    if (is.list(input$method_path) && !is.null(input$method_path$path)) {
       selected_paths$method <- parseDirPath(roots, input$method_path)
       cat("Selected method path:", selected_paths$method, "\n")
     }
-    if (!is.null(input$output_path)) {
+    
+    if (is.list(input$output_path) && !is.null(input$output_path$path)) {
       selected_paths$output <- parseDirPath(roots, input$output_path)
       cat("Selected output path:", selected_paths$output, "\n")
     }
   })
-  
   
   # GENERATE SEQUENCE LIST -------------------------------------------------------------------------
   # UI - button
@@ -1235,20 +1257,30 @@ server <- function(input, output, session) {
   })
   
   # Functions for later #####################################################################
-  # UI for sequence status 
+  
+  # UI for sequence status - fixed 7/17
   output$sequence_status <- renderUI({
-    if(file.exists(selected_paths$output)) {
+    output_path <- selected_paths$output
+    
+    # Only proceed if a folder has been selected and it's a valid character string
+    if (!is.null(output_path) &&
+        is.character(output_path) &&
+        nzchar(output_path) &&
+        dir.exists(output_path)) {
+      
       div(
         style = "margin-top: 10px; padding: 10px; background-color: #e8f8e8; border: 1px solid #d0e0d0; border-radius: 5px;",
         h4("Sequence List Generated!", style = "margin-top: 0; color: #2c3e50;"),
-        p(paste("File created:", basename(selected_paths$output))),
+        p(paste("Folder selected:", basename(output_path))),
         div(
           style = "display: flex; gap: 10px;",
-          actionButton("view_sequence", "View File", icon = icon("eye"), 
+          actionButton("view_sequence", "View Folder", icon = icon("eye"), 
                        style = "color: white; background-color: #3498db;")
         )
       )
+      
     } else {
+      # Return nothing until the folder is selected
       NULL
     }
   })

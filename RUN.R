@@ -23,8 +23,6 @@ for (pkg in required_packages) {
   }
 }
 
-
-
 # Change the wd to the folder the app is in - MORE ROBUST changed 5/30
 v <- getwd()
 setwd(v)
