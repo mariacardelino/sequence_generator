@@ -138,6 +138,26 @@ ui <- fluidPage(
                uiOutput("generate_list")
         )
       ),
+      
+      # Filepath selection panel
+      fluidRow(
+        column(12,
+               div(style = "background-color: #e6f4e6; padding: 15px; border: 1px solid #c3e6cb; border-radius: 5px; margin-top: 30px;",
+                   h3("Select filepaths"),
+                   fluidRow(
+                     column(4,
+                            shinyFilesButton("project_path", "1. Project filepath", "Select project folder", multiple = FALSE)
+                     ),
+                     column(4,
+                            shinyFilesButton("method_path", "2. Method folder", "Select method folder", multiple = FALSE)
+                     ),
+                     column(4,
+                            shinyFilesButton("output_path", "3. Output filepath", "Select output folder", multiple = FALSE)
+                     )
+                   )
+               )
+        )
+      ),
       # Add the debug console container below
       fluidRow(
         column(12,

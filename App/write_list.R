@@ -39,16 +39,20 @@ l2 <- "add"
 endpath <- sprintf("Batch_%s_%s", batch, date)
 
 if (machine == 'C18') {
-  
+  # adding option to choose this path 7/16
   path <- sprintf('E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/%s/', endpath)
+  # endpath = Batch_4_250515
   # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515/"
+  
   ms2path <- paste0(path, '/MSMS')
   # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515//MSMS"
   
 } else if (machine == 'HILIC') {
   
+  # adding option to choose this path 7/16
   path <- sprintf('E:/Projects/CLU0120_MEC_HILIC/1-Raw_Files/%s/', endpath)
   # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515/"
+  
   ms2path <- paste0(path, '/MSMS')
   # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515//MSMS"
   
@@ -56,36 +60,64 @@ if (machine == 'C18') {
 
 # Field 7 - Instrument Method 
 # 5/29 - streamline 
-# Later - make it local: "App/Methods/240408_C18pos_120k_BottomPump_Channel1"
+# 7/16 - making local: App/Methods/C18 or HILIC
 if (machine == 'C18') {
   
+  # Added method files to local folder 7/16 - BUT instrument computer won't know!
+  # reg_pos <- "Methods/C18/240408_C18pos_120k_BottomPump_Channel1" #check this is the right path (assume working in app directory?)
+  # reg_neg <- "Methods/C18/240408_C18neg_120k_TopPump_Channel2"
+  # 
+  # ms2_pfas_pos <- "Methods/C18/240802_C18pos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
+  # ms2_pfas_neg <- "Methods/C18/240802_C18neg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
+  # 
+  # ms2_nonpfas_pos <- "Methods/C18/240801_C18pos_BottomPump_Channel1_Water+PP-ddMS2"
+  # ms2_nonpfas_neg <- "Methods/C18/240801_C18neg_TopPump_Channel2_Water+PP-ddMS2"
+  # 
+  # ms2_pool_pos <- "Methods/C18/240801_C18pos_BottomPump_Channel1_Water-ddMS2"
+  # ms2_pool_neg <- "Methods/C18/240801_C18neg_TopPump_Channel2_Water-ddMS2"
+
+  # Keep C:\\ path for our instrument
   reg_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240408_C18pos_120k_BottomPump_Channel1"
   reg_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240408_C18neg_120k_TopPump_Channel2"
-  
+
   ms2_pfas_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240802_C18pos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
   ms2_pfas_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240802_C18neg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
-  
+
   ms2_nonpfas_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18pos_BottomPump_Channel1_Water+PP-ddMS2"
   ms2_nonpfas_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18neg_TopPump_Channel2_Water+PP-ddMS2"
-  
+
   ms2_pool_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18pos_BottomPump_Channel1_Water-ddMS2"
   ms2_pool_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18neg_TopPump_Channel2_Water-ddMS2"
-  
+
   
 } else if (machine == 'HILIC') {
   
+  # Added method files to local folder 7/16 - BUT instrument computer won't know!
+  # reg_pos <- "Methods/HILIC/240611_HILICpos_120k_BottomPump_Channel1"
+  # reg_neg <- "Methods/HILIC/240411_HILICneg_120k_TopPump_Channel2"
+  # 
+  # ms2_pfas_pos <- "Methods/HILIC/240802_HILICpos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
+  # ms2_pfas_neg <- "Methods/HILIC/240802_HILICneg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
+  # 
+  # ms2_nonpfas_pos <- "Methods/HILIC/240801_HILICpos_BottomPump_Channel1_Water+PP-ddMS2"
+  # ms2_nonpfas_neg <- "Methods/HILIC/240801_HILICneg_TopPump_Channel2_Water+PP-ddMS2"
+  # 
+  # ms2_pool_pos <- "Methods/HILIC/240801_HILICpos_BottomPump_Channel1_Water-ddMS2"
+  # ms2_pool_neg <- "Methods/HILIC/240801_HILICneg_TopPump_Channel2_Water-ddMS2"
+  
+  # Keep C:\\ path for our instrument
   reg_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240611_HILICpos_120k_BottomPump_Channel1"
   reg_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240411_HILICneg_120k_TopPump_Channel2"
-  
+
   ms2_pfas_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240802_HILICpos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
   ms2_pfas_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240802_HILICneg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
-  
+
   ms2_nonpfas_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICpos_BottomPump_Channel1_Water+PP-ddMS2"
   ms2_nonpfas_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICneg_TopPump_Channel2_Water+PP-ddMS2"
-  
+
   ms2_pool_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICpos_BottomPump_Channel1_Water-ddMS2"
   ms2_pool_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICneg_TopPump_Channel2_Water-ddMS2"
-  
+
 } 
 
 # Field 8 - Position

@@ -18,6 +18,35 @@
   # groups of QAQCs to put in between them. For exampple, if there are only 5 smaples, run the first QAQCs, then the 5 samples, then the next QAQCs. 
   # If there are 120 samples, it will do groups of (however many we set it to) with QAQCs in between until it runs out of samples, then it finishes.
 
+# What we want:
+# still groups of 20 samples? 
+# If less than 80 samples, do groups of 10.
+# If less than 10, only one group. 
+
+# Order ##############
+#' 1 blank
+#' 1 water
+#' 1 NIST
+#' 1 AMAP
+#' 
+#' groups of study samples surrounded by pools:
+#'  for 160 samples: 4 groups of 20 samples, pools 1-5. 
+#'      ex: pools 1 & 2 #1, 20 samples, pools 1 & 2 #2, 20 samples.... pools  1 & 2 #5
+#'  for 70 samples: 4 groups of 10 samples.
+#'  
+#'  1 fake blank
+#'  8 cal curves
+#'  1 fake blank
+#'  
+#'  repeat above pool1&2 study sample pool1&2 alternation
+#'  for 160 samples: 4 groups of 20 samples, pools 6-10
+#'  
+#'  1 AMAP
+#'  MDL (repeat cal curve)
+#'  water
+#'  1 real blank
+
+
   # Add new input variables 
       #' how many MSMS injections and how far apart
       #' injection volume (Field 10)
@@ -38,6 +67,8 @@
 #' pool_count: number of rows of pools
 #' pools1: pools that start with HRE and have .p1
 #' pools2: pools that start with HRE and have .p2
+#'  # requires pool_count to be 20! fix this?
+
 #' waters: rows that start with 'Water'
 #' water_count: number of rows of waters
 #' amaps: rows that start with 'AM'
@@ -74,7 +105,7 @@
 # 1 NIST (out of 1)
 # 1 AMAP  (out of 2)
 
-# Pool 1 
+# Pool 1 (1-5)
 # Pool 2
 # 20 study samples
 # Pool 1
@@ -93,7 +124,7 @@
 # CAL CURVE (1-8/8)
 # 1 'blank' 
 
-# Pool 1 (6/10)
+# Pool 1 (6-10)
 # Pool 2
 # 20 study samples
 # Pool 1
@@ -165,8 +196,14 @@ server <- function(input, output, session) {
       position = NULL,
       path = NULL,
       firstlast = NULL
-    ),
-    generated_file_path = NULL
+      )
+  )
+  
+  #Folder paths for selected locations - 7/16
+  selected_paths <- reactiveValues(
+    project = NULL,
+    method = NULL,
+    output = NULL
   )
   
   
@@ -1166,6 +1203,22 @@ server <- function(input, output, session) {
                      duration = 3)
   })
   
+  ## ADD 7/16 - User-selected folder paths
+  observe({
+    if (!is.null(input$project_path)) {
+      selected_paths$project <- parseDirPath(roots, input$project_path)
+      cat("Selected project path:", selected_paths$project, "\n")
+    }
+    if (!is.null(input$method_path)) {
+      selected_paths$method <- parseDirPath(roots, input$method_path)
+      cat("Selected method path:", selected_paths$method, "\n")
+    }
+    if (!is.null(input$output_path)) {
+      selected_paths$output <- parseDirPath(roots, input$output_path)
+      cat("Selected output path:", selected_paths$output, "\n")
+    }
+  })
+  
   
   # GENERATE SEQUENCE LIST -------------------------------------------------------------------------
   # UI - button
@@ -1184,11 +1237,11 @@ server <- function(input, output, session) {
   # Functions for later #####################################################################
   # UI for sequence status 
   output$sequence_status <- renderUI({
-    if(!is.null(values$generated_file_path) && file.exists(values$generated_file_path)) {
+    if(file.exists(selected_paths$output)) {
       div(
         style = "margin-top: 10px; padding: 10px; background-color: #e8f8e8; border: 1px solid #d0e0d0; border-radius: 5px;",
         h4("Sequence List Generated!", style = "margin-top: 0; color: #2c3e50;"),
-        p(paste("File created:", basename(values$generated_file_path))),
+        p(paste("File created:", basename(selected_paths$output))),
         div(
           style = "display: flex; gap: 10px;",
           actionButton("view_sequence", "View File", icon = icon("eye"), 
@@ -1311,8 +1364,11 @@ server <- function(input, output, session) {
     debug_log(paste("10. Path:", ifelse(is.null(values$run_info$path), "NULL", values$run_info$path)))
     debug_log(paste("First/Last:", ifelse(is.null(values$run_info$firstlast), "NULL", values$run_info$firstlast)))
 
+    # 7/16 add the 3 folder paths? 
+    # 7/16 - put safeguards so you can't mess up the format?
+    
+    
     # Check if any required values are missing
-    #? Later - put safeguards so you can't mess up the format!
     missing_values <- character(0)
     if (is.null(values$run_info$date)) missing_values <- c(missing_values, "date")
     if (is.null(values$run_info$study)) missing_values <- c(missing_values, "study")
@@ -1332,7 +1388,7 @@ server <- function(input, output, session) {
     
     debug_log("12. All required run info values exist")
     
-    # Access the run info values with safeguards
+    # Access the run info values 
     date_value <- values$run_info$date
     study_value <- values$run_info$study
     batch_value <- values$run_info$batch
@@ -1342,6 +1398,11 @@ server <- function(input, output, session) {
     position_value <- values$run_info$position
     path_value <- values$run_info$path
     firstlast_value <- values$run_info$firstlast
+    
+    # Folder paths
+    project_path <- selected_paths$project
+    method_path <- selected_paths$method
+    output_path <- selected_paths$output
     
     # Create filename with inputs
     filename_value <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value,"_", machine_value)
@@ -1436,14 +1497,21 @@ server <- function(input, output, session) {
     
     # Set output file path ##########################################################################
     # CHANGED 5/29 to instrument folder
+    # Changed 7/16 to selected_paths$output (from new input button)
     
     if(machine_value == "C18") {
-      directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU0120_250501_MEC_C18/3-Sequence_Files"
+      # old - hardcode destination
+      # directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU0120_250501_MEC_C18/3-Sequence_Files"
+      
+      directory <- selected_paths$output #already a character path
       sequence_filepath <- file.path(directory, filename_value)
       debug_log(paste("22. Original full output path:", sequence_filepath))
      
     } else if(machine_value == "HILIC") {
-      directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-NANCY/CLU0120_250501_MEC_HILIC/3-Sequence_Files"
+      # old - hardcode destination
+      # directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-NANCY/CLU0120_250501_MEC_HILIC/3-Sequence_Files"
+      
+      directory <- selected_paths$output #already a character path
       sequence_filepath <- file.path(directory, filename_value)
       debug_log(paste("22. Original full output path:", sequence_filepath))
     }
@@ -1513,10 +1581,17 @@ server <- function(input, output, session) {
         assign("path", path_value, envir = .GlobalEnv)
         assign("firstlast", firstlast_value, envir = .GlobalEnv)
         
+        assign("final_data", final_data, envir = .GlobalEnv)
+        
         assign("sequence_filename", filename_value, envir = .GlobalEnv)
         assign("sequence_filepath", sequence_filepath, envir = .GlobalEnv)
         
-        assign("final_data", final_data, envir = .GlobalEnv)
+        assign("project_folder", project_path, envir = .GlobalEnv)
+        assign("method_folder", method_path, envir = .GlobalEnv)
+        assign("output_folder", output_path, envir = .GlobalEnv)
+        # 7/16 do something with these in write_list?
+        
+        
         
         debug_log("28. All variables set in global environment")
         

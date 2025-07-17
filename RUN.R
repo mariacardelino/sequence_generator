@@ -10,7 +10,7 @@
 required_packages <- c(
   "openxlsx", "shinyjs", "tools",
   "shiny", "readr", "dplyr", 
-  "plotly", "readxl"
+  "plotly", "readxl", "shinyFiles"
 )
 
 # Install any that are missing
