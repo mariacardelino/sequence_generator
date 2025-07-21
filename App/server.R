@@ -4,65 +4,51 @@
 ##########################################################################################################
 
 ## TO-DO ####
+# ShinyFile selection - decide how to select project path, method files, and output path
+# Sample size adjustments - write_list line 220
+# Continue openspecimen - meeting 7/23 with Sean
 
-## 7/17 learn about shinyfiles, nothing is happening for folder path selection.
-# do something with the passed on variables method_path, project_path, output_path
+#### NEW ORDER 7/21 ###############################################################################
+# 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
+# 1 water (out of 2)
+# 1 NIST (OPTIONAL, out of 1)
 
-#########################
+# Pool 1 
+# Pool 2
+# 3 PFAS (0.1, 0.5, 1)
+# 40 study samples
+# Pool 1
+# Pool 2
+# 40 study samples
+# Pool 1
+# Pool 2
+# 3 PFAS (0.1, 0.5, 1)
 
-# Remove all filepaths from the input variables and the code below. Check all scripts for filepaths
-# ^ To accomplish this, must add new input variables for choosing a filepath from the local machine for: 
-    #' where the filepath for all 8 methods are (normal, PFAS, nonPFAS MSMS for C18 and HILIC. 2 extra for the first and last batch.)
-      #' add these to 'Methods' folder in app, ex: "App/Methods/240408_C18pos_120k_BottomPump_Channel1"
-    #' where the user wants the sequence list to export
-    #' where the project filepath is (Field 6), E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515/
-  
-# Take notes about how each type of sample (study sample, pool, cal curve, etc) is counted and processed
+# 1 'blank' 
+# CAL CURVE (1-8/8)
+# 1 'blank' 
 
-# Make the sample size completely adjustable. Keep the same goup size. The code should caclulate how many smapes there are and then it should know how many 
-  # groups of QAQCs to put in between them. For exampple, if there are only 5 smaples, run the first QAQCs, then the 5 samples, then the next QAQCs. 
-  # If there are 120 samples, it will do groups of (however many we set it to) with QAQCs in between until it runs out of samples, then it finishes.
+# Pool 1
+# Pool 2
+# 40 study samples
+# Pool 1
+# Pool 2
+# 40 study samples
+# Pool 1
+# Pool 2
+# 3 PFAS (0.1, 0.5, 1)
+# 1 AMAP (out of 1)
+# 1 water (out of 2)
+# 1 real blank
 
-# What we want:
-# still groups of 20 samples? 
-# If less than 80 samples, do groups of 10.
-# If less than 10, only one group. 
-
-# Order ##############
-#' 1 blank
-#' 1 water
-#' 1 NIST
-#' 1 AMAP
-#' 
-#' groups of study samples surrounded by pools:
-#'  for 160 samples: 4 groups of 20 samples, pools 1-5. 
-#'      ex: pools 1 & 2 #1, 20 samples, pools 1 & 2 #2, 20 samples.... pools  1 & 2 #5
-#'  for 70 samples: 4 groups of 10 samples.
-#'  
-#'  1 fake blank
-#'  8 cal curves
-#'  1 fake blank
-#'  
-#'  repeat above pool1&2 study sample pool1&2 alternation
-#'  for 160 samples: 4 groups of 20 samples, pools 6-10
-#'  
-#'  1 AMAP
-#'  MDL (repeat cal curve)
-#'  water
-#'  1 real blank
+### HANDLING
+# Expecting 80 samples per plate (2 plates)
+# If 60+: split in half
+# If <60: do only one chunk
 
 
-  # Add new input variables 
-      #' how many MSMS injections and how far apart
-      #' injection volume (Field 10)
-    
-# Add changes for first and last batch
 
-# Start moving to OpenSpecimen. Keep original version, make a copy with the API
-
- 
-############### NOTES ABOUT SAMPLE LOGIC BY TYPE:
-## Below is all done by final_data$Sample_ID
+############### NOTES ABOUT SAMPLE LOGIC BY TYPE
 
 #' total_count: rows that are not NA in Sample_ID** FIX
 #' cal_curves: rows that start with 'FBS'
@@ -84,8 +70,6 @@
 #' ## STUDY SAMPLES LOGIC #################
 #' identify with an A or a K followed by 7 numbers in final_data$Sample_ID
 #' 
-#' if order_pattern is by row, arrange in row order
-#' 
 #' total_samples: sum of cc_count + water_count + amap_count + nist_count + study_sample_count
 #' 
 #' ^ check against total_count, mismatches
@@ -104,7 +88,7 @@
   #' chunk 4: for (i in ((3*batch_size+1):(batch_size*4))) and so on until 8 groups of 20 (160)
 
 
-######### ORDER
+######### OLD ORDER
 # 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
 # 1 water (out of 2)
 # 1 NIST (out of 1)
@@ -1150,12 +1134,12 @@ server <- function(input, output, session) {
                            choices = c("C18", "HILIC")),
                
                selectInput("position_input", "Position",
-                           choices = c("R", "B", "G", "Y")),
+                           choices = c("R", "B", "G", "Y", "CH01", "CH02", "CH03", "CH04", "CH05", "CH06", "CH07", "CH08", "CH09")),
                
                radioButtons("first_last_batch", "First or last batch? (still in development)",
                             choices = c("TRUE" = TRUE, "FALSE" = FALSE),
                             selected = FALSE,
-                            inline = TRUE) 
+                            inline = TRUE) # make this actually do something?
         )
       ),
       
@@ -1174,7 +1158,7 @@ server <- function(input, output, session) {
     # Validate inputs
     req(input$date_input, input$study_input, input$batch_input, input$rack_input, 
         input$technician_input, input$instrument_input, input$position_input, 
-        input$first_last_batch ) #not requiring path
+        input$first_last_batch ) 
     
     # Update reactive values
     values$run_info$date <- input$date_input
@@ -1192,22 +1176,20 @@ server <- function(input, output, session) {
                      duration = 3)
   })
   
-  ## ADD 7/16 - User-selected folder paths
-  roots <- c("C Drive" = "C:/")
-  
-  # Example making directory at base of computer
-  # server <- function(input, output){
-  #   volumes = getVolumes()() # this makes the directory at the base of your computer.
-  #   observe({
-  #     shinyDirChoose(input, 'folder', roots=volumes, filetypes=c('', 'txt'))
-  #     print(input$folder)
-  #   })
-  # }
+  ## Add user-selected folder paths ##########################################################################
+  ## Working 7/22 ? 
+
+  # Specify roots 
+  roots <- c(
+    "Home" = normalizePath("~"),
+    "Root" = "C:/",         # or "/" on Linux/Mac
+    "R Drive" = "R:/"
+  )
   
   # Enable folder selection for each input
-  shinyDirChoose(input, 'project_path', roots = roots, session = session)
-  shinyDirChoose(input, 'method_path', roots = roots, session = session)
-  shinyDirChoose(input, 'output_path', roots = roots, session = session)
+  shinyDirChoose(input, 'project_path', roots = roots, session = session) # Project path - auto?
+  shinyDirChoose(input, 'method_path', roots = roots, session = session) # Method files - select folder then auto-assign method?
+  shinyDirChoose(input, 'output_path', roots = roots, session = session) # Output path - type?
   
   # Observe selections and convert to full paths
   observe({

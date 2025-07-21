@@ -1,45 +1,53 @@
 ################################################################################################
-# Changing to new default (40 samples/chunk, 4 chunks). 
-# Making adaptable to racks of more or less than 80 samples (expected).
+# write_list.R as of 7/21 before changing the order from old (20 samples/chunk, 6 chunks) to new default (40 samples/chunk, 4 chunks)
+# formerly run_parameters.R and c18_lines.R OR hilic_lines.R - now all in one file, streamlined
 ################################################################################################
 
-# 7/22 change to new order:
+
+######### OLD ORDER - this file ############################################################
 # 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
 # 1 water (out of 2)
-# 1 NIST (OPTIONAL, out of 1)
+# 1 NIST (out of 1)
+# 1 AMAP  (out of 2)
 
-# Pool 1 
+# Pool 1 (1-5)
 # Pool 2
-# 3 PFAS (0.1, 0.5, 1)
-# 40 study samples
+# 20 study samples
 # Pool 1
 # Pool 2
-# 40 study samples
+# 20 study samples
 # Pool 1
 # Pool 2
-# 3 PFAS (0.1, 0.5, 1)
+# 20 study samples
+# Pool 1
+# Pool 2
+# 20 study samples
+# Pool 1
+# Pool 2 
 
 # 1 'blank' 
 # CAL CURVE (1-8/8)
 # 1 'blank' 
 
+# Pool 1 (6-10)
+# Pool 2
+# 20 study samples
 # Pool 1
 # Pool 2
-# 40 study samples
+# 20 study samples
 # Pool 1
 # Pool 2
-# 40 study samples
+# 20 study samples
 # Pool 1
 # Pool 2
-# 3 PFAS (0.1, 0.5, 1)
-# 1 AMAP (out of 1)
-# 1 water (out of 2)
-# 1 real blank
+# 20 study samples (160 total)
+# Pool 1
+# Pool 2 
 
-### HANDLING
-# Expecting 80 samples per plate (2 plates)
-# If 60+: split in half
-# If <60: do only one chunk
+# 1 AMAP (2/2)
+# MDL (Cal curve)
+# Water (2/2)
+# 1 real blank 
 
 # TRIM WHITE SPACE 
 final_data$Sample_ID <- trimws(final_data$Sample_ID, which = "left")
@@ -223,20 +231,6 @@ ordered_study_samples <- study_samples[order(study_samples[[order_column]]), ]
 # If <60: do only one chunk
 
 ## Logic:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # Extra - count totals for next part and to check
 total_samples <- cc_count + water_count + amap_count + nist_count + study_sample_count
