@@ -58,25 +58,6 @@ ui <- fluidPage(
     tabPanel(
       "2. Check Layout",
       fluidRow(
-        column(12,
-               div(style = "margin-bottom: 20px; display: flex; align-items: center; gap: 15px;",
-                   div(style = "flex-grow: 1;",
-                       radioButtons("order_by", "Order samples by:", 
-                                    choices = c("Order by column of each plate" = "Col_order_by_plate", 
-                                                "Order by row of each plate" = "Row_order_by_plate"),
-                                    selected = "Col_order_by_plate",
-                                    inline = TRUE)
-                   ),
-                   div(style = "display: flex; gap: 10px; align-items: center;",
-                       div(style = "margin-left: 15px;",
-                           actionButton("gototab3", "Next tab", class = "btn-primary", 
-                                        style = "font-size: 16px; padding: 8px 20px;")
-                       )
-                   )
-               )
-        )
-      ),
-      fluidRow(
         column(6,
                tableOutput("result_table1")
         ),
@@ -103,10 +84,12 @@ ui <- fluidPage(
                        h4("Click below to match Matrix IDs from study inventory. Check for accuracy. Then update database."),
                        actionButton("match_samples", "Step 1: Match IDs to inventory", class = "btn-primary"),
                        actionButton("add_matrix_ids", "Step 2: Update inventory", class = "btn-info"),
-                       br(), br(), br(), br(),
-                       radioButtons("order_by", "Order samples by:", 
-                                    choices = c("Order by column of each plate" = "Col_order_by_plate", 
-                                                "Order by row of each plate" = "Row_order_by_plate"),
+                       br(), br(), 
+                       uiOutput("order_message"),
+                       br(),
+                       radioButtons("order_by", "Manually set injection order:", 
+                                    choices = c("Order by column" = "Col_order_by_plate", 
+                                                "Order by row" = "Row_order_by_plate"),
                                     selected = "Col_order_by_plate",
                                     inline = TRUE)
                    ),

@@ -526,17 +526,7 @@ server <- function(input, output, session) {
   # Matrix ID results from Plate Scans
   output$result_table1 <- renderTable({
     req(id_container())
-    
-    # Get the selected ordering column
-    order_col <- input$order_by
-    
-    # Create a copy of the data
     display_data <- id_container()
-    
-    # Order the data based on user selection
-    if (!is.null(order_col) && order_col %in% names(display_data)) {
-      display_data <- display_data[order(display_data[[order_col]]), ]
-    }
     
     # Hide columns
     display_data$Col_order_by_plate <- NULL
@@ -648,46 +638,35 @@ server <- function(input, output, session) {
   
   #### TAB 3: SAMPLE TYPES #########################################################################################
   
-  # Observer for the "gototab3" button
-  observeEvent(input$gototab3, {
-    # Switch to the third tab when the button is clicked
-    updateTabsetPanel(session, "tabs", selected = "3. Connect to inventory")
-  })
-  
   values <- reactiveValues(
-    samples_fetched = FALSE
+    samples_fetched = FALSE #do not show until ready
   )
   
   # MATCH SAMPLES LOGIC #########################
   # This is the Fetch sample ID button.
   observeEvent(input$match_samples, {
     req(id_container())
-    req(exists("inventory"))
+    req(exists("qaqc_inventory")) 
+    req(exists("sample_inventory")) 
     
     # Get current data
-    current_data <- id_container()
+    current_data <- id_container() 
     
     # Add Sample_ID column if it doesn't exist
     if (!"Sample_ID" %in% names(current_data)) {
       current_data$Sample_ID <- NA_character_
     }
-    
-    # Add RackNum column if it doesn't exist
-    if (!"RackNum" %in% names(current_data)) {
-      current_data$RackNum <- NA_character_  # Initialize the column
-    }
-    
+
     # Create vectors to track positions for ordering analysis
     matched_ids <- c()
     matched_positions <- c()
     
-    # Process each row according to its sampletype
+    # Process each row according to its sampletype #######################
     for (i in 1:nrow(current_data)) {
-      matrix_id <- current_data$ID[i]
+      matrix_id <- current_data$ID[i] #get matrix ID (ex: K0876323, NA for empty or QAQC)
       
-      # Skip empty IDs
+      # First - skip empty IDs
       if (is.na(matrix_id) || matrix_id == "") {
-        current_data$RackNum[i] <- NA
         current_data$Sample_ID[i] <- NA 
         next
       }
@@ -695,14 +674,10 @@ server <- function(input, output, session) {
       # Get the sampletype
       sample_type <- current_data$sampletype[i]
       
-      # Handle differently based on sampletype
       if (sample_type == "QAQC") {
-        # For QAQC samples, look up the Sample_ID in qaqcs dataframe
-        match_row <- which(inventory$Matrix_ID == matrix_id)
+        match_row <- which(qaqc_inventory$Matrix_ID == matrix_id) 
         if (length(match_row) > 0 ) { 
-          current_data$Sample_ID[i] <- inventory$Sample_ID[match_row[1]] #in case repeat copy?
-          # Also collect Rack number
-          current_data$RackNum[i] <- inventory$RackNum[match_row[1]]
+          current_data$Sample_ID[i] <- qaqc_inventory$Sample_ID[match_row[1]] #in case repeat copy?
           # Store for ordering analysis
           matched_ids <- c(matched_ids, matrix_id)
           matched_positions <- c(matched_positions, current_data$pos384[i])
@@ -713,18 +688,13 @@ server <- function(input, output, session) {
         }
         
       } else if (sample_type == "Study_Sample") {
-        # For study samples, Sample_ID and Matrix_ID in inventory are the same
-        match_row <- which(inventory$Matrix_ID == matrix_id)
+        match_row <- which(sample_inventory$Matrix_ID == matrix_id) 
         if (length(match_row) > 0) {
-          # POTENTIALLY USE THE OG STUDY INVENTORY INSTEAD!!
-          current_data$Sample_ID[i] <- inventory$Sample_ID[match_row[1]] #in case repeat copy
-          # Also collect Rack number
-          current_data$RackNum[i] <- inventory$RackNum[match_row[1]]
-          
+          current_data$Sample_ID[i] <- sample_inventory$Sample_ID[match_row[1]] #in case repeat copy
           # Store for ordering analysis
           matched_ids <- c(matched_ids, matrix_id)
           matched_positions <- c(matched_positions, current_data$pos384[i])
-        
+          
         } else {
           # If no match found, leave empty
           current_data$Sample_ID[i] <- ""
@@ -732,7 +702,16 @@ server <- function(input, output, session) {
       }
     } # END LOOP THROUGH MATRIX ID CHECK! 
     
-    #### Are samples ordered by row or column? #################
+    # Update id_container with the modified data!!
+    id_container(current_data)
+    
+    ### HELPFUL INFORMATION ####
+    # If the row is supposed to be empty (no tube), Sample_ID will be NA
+    # If no sample ID was found in inventory, Sample_ID will be ""
+    
+    #### Are samples ordered by row or column? ########################################################################################
+    order_pattern <- reactiveVal("bycol")  # Default value
+    
     if (length(matched_positions) >= 4) {
       # Extract row letters and column numbers
       rows <- substr(matched_positions, 1, 1)
@@ -744,28 +723,32 @@ server <- function(input, output, session) {
       
       # Determine ordering pattern and notify
       if (row_changes > col_changes) {
-        order_pattern <<- "byrow"  # Global assignment
-        showNotification("Plates appear to be in row-wise ordering.", 
-                         type = "message", duration = 10)
-        
-        cat("INVENTORY CHECK: Sample plates appear to be in row-wise ordering.\n")
+        order_pattern("byrow") 
       } else {
-        order_pattern <<- "bycol"  # Global assignment
-        showNotification("Plates appear to be in column-wise ordering.",
-                         type = "message", duration = 10)
-        cat("INVENTORY CHECK: Sample plates appear to be in column-wise ordering.\n")
+        order_pattern("bycol")
       }
     }
     
-    # Update id_container with matched data
-    id_container(current_data)
+    # 7/21: add reactive message 
+    output$order_message <- renderUI({
+      order_text <- switch(order_pattern(),
+                           "bycol" = "column of each plate.",
+                           "byrow" = "row of each plate.",
+                           "an unknown pattern")
+      
+      tags$div(
+        style = "font-size: 16px; font-weight: 500; color: #333;",
+        paste("The sample inventory appears to be organized by", order_text)
+      )
+    })
     
+    ########################################################################################################################################
+
     # Show success message
     showNotification("Sample ID matching completed", type = "message")
     values$samples_fetched <- TRUE
   }) ##### Match function complete
   
-
   #count matches - UI for right column ##################
   output$matchstatus <- renderUI({
     req(id_container())
@@ -809,40 +792,39 @@ server <- function(input, output, session) {
         )
       )
     } else {
-      p(em("Click 'Fetch Sample IDs' to see statistics"))
+      p(em("Click 'Match IDs to inventory' to see statistics"))
     }
   })
   
 
-  
-  # Display sample names - result_table2 logic
-  output$result_table2 <- renderTable({
+  # Display and store ordered data based on user choice
+  ordered_data <- reactive({
     req(id_container())
-    # Get order 
-    order_col <- input$order_by
+    req(input$order_by)
     
-    # Create a copy of the data
     display_data <- id_container()
     
-    # Order the data based on user selection
-    if (!is.null(order_col) && order_col %in% names(display_data)) {
-      display_data <- display_data[order(display_data[[order_col]]), ]
+    order_button <- input$order_by
+    if (!is.null(order_button) && order_button %in% names(display_data)) {
+      display_data <- display_data[order(display_data[[order_button]]), ]
     }
     
-    # Hide the ordering columns
+    # Remove unnecessary columns
     display_data$Col_order_by_plate <- NULL
     display_data$Row_order_by_plate <- NULL
     display_data$num384 <- NULL
     
-    
+    # Rename columns
     names(display_data)[names(display_data) == "pos96"] <- "96-wp position-Plate"
     names(display_data)[names(display_data) == "pos384"] <- "384-wp position"
     names(display_data)[names(display_data) == "sampletype"] <- "Sample Type"
     
     display_data
-    
   })
   
+  output$result_table2 <- renderTable({
+    ordered_data()
+  })
   
   # QAQC PLATE LABELLING ####################################################
   # Create a UI output that conditionally renders the plot, fixed 5/13
@@ -853,7 +835,7 @@ server <- function(input, output, session) {
     } else {
       div(
         style = "height: 500px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; border: 1px dashed #ccc;",
-        p("QAQC plate will appear here after clicking 'Fetch Sample IDs'")
+        p("QAQC plate will appear here after clicking 'Match IDs to inventory'")
       )
     }
   })
@@ -954,12 +936,8 @@ server <- function(input, output, session) {
     return(plot)
   })
   
-  ### END TAB 3 Match logic ##################
-  
   ####################################################################################################################################
-  # SAVE MATRIX IDs to EXCEL SHEET  - update from FALSE to TRUE
-  
-  # SAVE SAMPLE_IDS to SHEET under Analyzed_ID! Added 5/23
+  # Check and add matrix IDs from inventory ###################################
   
   observeEvent(input$add_matrix_ids, {
     # Show processing message
@@ -967,15 +945,22 @@ server <- function(input, output, session) {
                      type = "message", duration = NULL, id = "checking_notification")
     
     
-    # Path to the Excel file - adjust the path to account for the subfolder
-    excel_path <- file.path("..", inventory_file_path)
+    # Path to the Excel files assigned in run_app.R changed 7/21
+    q_path <- file.path("..", q_filepath)
+    s_path <- file.path("..", s_filepath) 
     
-    # inventory_file_path assigned in run_app.R
+    # assigned in run_app.R
     
-    # Check if file exists
-    if (!file.exists(excel_path)) {
+    # Check if inventory files exist
+    if (!file.exists(q_path)) {
       removeNotification(id = "checking_notification")
-      showNotification(paste("Error: File not found at", excel_path), 
+      showNotification(paste("Error: File not found at", q_path), 
+                       type = "error", duration = 10)
+      return()
+    }
+    if (!file.exists(s_path)) {
+      removeNotification(id = "checking_notification")
+      showNotification(paste("Error: File not found at", s_path), 
                        type = "error", duration = 10)
       return()
     }
@@ -986,14 +971,14 @@ server <- function(input, output, session) {
       current_ids <- id_container()$ID
       
       # Read just the necessary sheets with only required columns
-      qaqcs_data <- read_excel(excel_path, sheet = "QAQCs")
+      qaqcs_data <- read_excel(q_path, sheet = "QAQCs")
       qaqc_matches <- sum(qaqcs_data$Matrix_ID %in% current_ids)
       
       # Count QAQCs that match and are already analyzed
       qaqc_already_analyzed <- sum(qaqcs_data$Matrix_ID %in% current_ids & qaqcs_data$Analyzed == TRUE, na.rm = TRUE)
       
       # Read 'Samples' sheet to find matches
-      samples_data <- read_excel(excel_path, sheet = "Samples")
+      samples_data <- read_excel(s_path, sheet = "Samples")
       sample_matches <- sum(samples_data$Matrix_ID %in% current_ids)
       
       # Count Samples that match and are already analyzed
@@ -1039,7 +1024,8 @@ server <- function(input, output, session) {
       
       # Store match information for use in the NEXT STEP --------------
       values$excel_update_info <- list(
-        path = excel_path,
+        q_path = q_path,
+        s_path = s_path,
         qaqcs_data = qaqcs_data,
         samples_data = samples_data,
         current_ids = current_ids
@@ -1051,7 +1037,7 @@ server <- function(input, output, session) {
       showNotification(paste("Error checking Excel file:", e$message), 
                        type = "error", duration = 10)
     })
-  })#### END the check and popup box for updating excel file!
+  })#### END the check and popup box for updating excel file! ####################################
   
   # Cancel handler
   observeEvent(input$cancel_matrix_update, {
@@ -1070,36 +1056,40 @@ server <- function(input, output, session) {
       # Retrieve stored info
       info <- values$excel_update_info
       
+      ### QAQC UPDATE ####################################
       # Load the workbook with write privileges
-      wb <- openxlsx::loadWorkbook(info$path)
+      wb <- openxlsx::loadWorkbook(info$q_path)
       
-      # Update 'QAQCs' sheet
+      # Update 'QAQCs' workbook
       qaqcs_data <- info$qaqcs_data
       for(i in 1:nrow(qaqcs_data)) {
         if(qaqcs_data$Matrix_ID[i] %in% info$current_ids) {
           qaqcs_data$Analyzed[i] <- TRUE
-          #qaqcs_data$Analyzed_ID[i] <- ID FROM SEQUENCE LIST
         }
       }
       openxlsx::writeData(wb, sheet = "QAQCs", x = qaqcs_data, colNames = TRUE)
       
-      # Update 'Samples' sheet
+      # Save the workbook
+      openxlsx::saveWorkbook(wb, info$q_path, overwrite = TRUE)
+      
+      ### SAMPLE UPDATE ####################################
+      # Load the workbook with write privileges
+      wb2 <- openxlsx::loadWorkbook(info$s_path)
+      
+      # Update 'Samples' workbook
       samples_data <- info$samples_data
       for(i in 1:nrow(samples_data)) {
         if(samples_data$Matrix_ID[i] %in% info$current_ids) {
           samples_data$Analyzed[i] <- TRUE
-          #samples_data$Analyzed_ID[i] <- ID FROM SEQUENCE LIST
         }
       }
-      openxlsx::writeData(wb, sheet = "Samples", x = samples_data, colNames = TRUE)
+      openxlsx::writeData(wb2, sheet = "Samples", x = samples_data, colNames = TRUE)
       
       # Save the workbook
-      openxlsx::saveWorkbook(wb, info$path, overwrite = TRUE)
+      openxlsx::saveWorkbook(wb2, info$s_path, overwrite = TRUE)
       
-      # Clean up and show success message
-      values$excel_update_info <- NULL
       removeNotification(id = "updating_notification")
-      showNotification("Matrix IDs successfully marked as analyzed in the Excel file!", 
+      showNotification("Matrix IDs successfully marked as analyzed in the Excel files!", 
                        type = "message", duration = 5)
       
     }, error = function(e) {
@@ -1109,6 +1099,8 @@ server <- function(input, output, session) {
                        type = "error", duration = 10)
     })
   }) ### END CONFIRM - UPDATE MATRIX ID 'ANALYZED' Column.
+  
+  
   ####################################################################################################################################
   
   # 'Next button'
@@ -1122,9 +1114,6 @@ server <- function(input, output, session) {
   
   # Tab 4- generate sequence list 
   ######################################################################################################
-  ### 5/15 to do: 
-  # Make incorrect entering impossible (check formatting)
-  # Autofill - for things like date, study, and Doug's format for file.
 
   # Run info UI with form fields
   output$run_info <- renderUI({
@@ -1163,9 +1152,6 @@ server <- function(input, output, session) {
                selectInput("position_input", "Position",
                            choices = c("R", "B", "G", "Y")),
                
-               textInput("path_input", "Raw Files Path (still in development)",
-                           placeholder = "e.g., E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/ . Still in development, do not use"),
-               
                radioButtons("first_last_batch", "First or last batch? (still in development)",
                             choices = c("TRUE" = TRUE, "FALSE" = FALSE),
                             selected = FALSE,
@@ -1198,7 +1184,6 @@ server <- function(input, output, session) {
     values$run_info$tech <- input$technician_input
     values$run_info$machine <- input$instrument_input
     values$run_info$position <- input$position_input
-    values$run_info$path <- input$path_input
     values$run_info$firstlast <- as.logical(input$first_last_batch)
     
     # Show confirmation to user
@@ -1393,11 +1378,10 @@ server <- function(input, output, session) {
     debug_log(paste("7. Tech:", ifelse(is.null(values$run_info$tech), "NULL", values$run_info$tech)))
     debug_log(paste("8. Machine:", ifelse(is.null(values$run_info$machine), "NULL", values$run_info$machine)))
     debug_log(paste("9. Position:", ifelse(is.null(values$run_info$position), "NULL", values$run_info$position)))
-    debug_log(paste("10. Path:", ifelse(is.null(values$run_info$path), "NULL", values$run_info$path)))
     debug_log(paste("First/Last:", ifelse(is.null(values$run_info$firstlast), "NULL", values$run_info$firstlast)))
 
-    # 7/16 add the 3 folder paths? 
-    # 7/16 - put safeguards so you can't mess up the format?
+    # 7/21 add folder paths ?
+    # 7/21 - put safeguards so you can't mess up the format?
     
     
     # Check if any required values are missing
@@ -1409,7 +1393,6 @@ server <- function(input, output, session) {
     if (is.null(values$run_info$tech)) missing_values <- c(missing_values, "tech")
     if (is.null(values$run_info$machine)) missing_values <- c(missing_values, "machine")
     if (is.null(values$run_info$position)) missing_values <- c(missing_values, "position")
-    if (is.null(values$run_info$path)) missing_values <- c(missing_values, "path")
     if (is.null(values$run_info$firstlast)) missing_values <- c(missing_values, "firstlast")
 
     if (length(missing_values) > 0) {
@@ -1428,7 +1411,6 @@ server <- function(input, output, session) {
     tech_value <- values$run_info$tech
     machine_value <- values$run_info$machine
     position_value <- values$run_info$position
-    path_value <- values$run_info$path
     firstlast_value <- values$run_info$firstlast
     
     # Folder paths
@@ -1439,7 +1421,49 @@ server <- function(input, output, session) {
     # Create filename with inputs
     filename_value <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value,"_", machine_value)
     
-    debug_log("13. Successfully accessed all run info values")
+    debug_log("Successfully accessed all run info values")
+    
+    ## Added 7/21 - update QAQCS.xlsx and Samples.xlsx with the study,batch,date ################
+    debug_log("13. Updating QAQCS.xlsx with study info...")
+    
+    # Pull reactive value info from before 
+    info <- values$excel_update_info
+    
+    # Update QAQCS ####
+    wb <- openxlsx::loadWorkbook(info$q_path)
+    qaqcs_data <- info$qaqcs_data
+    
+    for(i in 1:nrow(qaqcs_data)) {
+      if(qaqcs_data$Matrix_ID[i] %in% info$current_ids) { # check?
+        #Update with study, batch #, date
+        qaqcs_data$Study_Batch_YYMMDD[i] <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value)
+      }
+    }
+    openxlsx::writeData(wb, sheet = "QAQCs", x = qaqcs_data, colNames = TRUE)
+    
+    # Save the workbook
+    openxlsx::saveWorkbook(wb, info$q_path, overwrite = TRUE)
+    
+    debug_log("Successfully updated QAQCS.xlsx")
+    
+    # Update Samples ####
+    wb2 <- openxlsx::loadWorkbook(info$s_path)
+    samples_data <- info$samples_data
+    
+    for(i in 1:nrow(samples_data)) {
+      if(samples_data$Matrix_ID[i] %in% info$current_ids) { # check?
+        #Update with study, batch #, date
+        samples_data$Study_Batch_YYMMDD[i] <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value)
+      }
+    }
+    openxlsx::writeData(wb2, sheet = "Samples", x = samples_data, colNames = TRUE)
+    
+    # Save the workbook
+    openxlsx::saveWorkbook(wb2, info$s_path, overwrite = TRUE)
+    
+    debug_log("Successfully updated Samples.xlsx")
+  
+    #######################################################################
     
     # Check id_container()
     debug_log("14. Checking sample data...")
@@ -1610,7 +1634,6 @@ server <- function(input, output, session) {
         assign("tech", tech_value, envir = .GlobalEnv)
         assign("machine", machine_value, envir = .GlobalEnv)
         assign("pos", position_value, envir = .GlobalEnv)
-        assign("path", path_value, envir = .GlobalEnv)
         assign("firstlast", firstlast_value, envir = .GlobalEnv)
         
         assign("final_data", final_data, envir = .GlobalEnv)
@@ -1621,7 +1644,7 @@ server <- function(input, output, session) {
         assign("project_folder", project_path, envir = .GlobalEnv)
         assign("method_folder", method_path, envir = .GlobalEnv)
         assign("output_folder", output_path, envir = .GlobalEnv)
-        # 7/16 do something with these in write_list?
+        # 7/21 do something with these in write_list?
         
         
         
@@ -1698,7 +1721,7 @@ server <- function(input, output, session) {
       }, finally = {
         # Clean up global environment
         debug_log("33. Cleaning up global variables...")
-        cleanup_vars <- c("date", "study", "batch", "rack", "tech", "machine", "pos", "path", 
+        cleanup_vars <- c("date", "study", "batch", "rack", "tech", "machine", "pos", 
                           "firstlast", "sequence_filename", "final_data", "sequence_filepath")
         rm(list = intersect(cleanup_vars, ls(.GlobalEnv)), envir = .GlobalEnv)
       })

@@ -190,13 +190,18 @@ study_samples <- final_data[grepl(pattern_a, final_data$Sample_ID) |
                               grepl(pattern_k, final_data$Sample_ID), ]
 study_sample_count <- nrow(study_samples)
 
-###############
-# IF SAMPLES ORGANIZED BY COLUMN - DO NOTHING
 
-# IF SAMPLES ORGANIZED BY ROW - ORDER AS BELOW
-if (exists("order_pattern") && order_pattern == "byrow") {
-  study_samples <- study_samples[order(as.numeric(study_samples$Row_order_by_plate)), ]
+### ORDER STUDY SAMPLES BASED ON USER INPUT 7/21 #################################
+ordering_preference <- order_pattern()
+
+order_column <- if (ordering_preference == "byrow") {
+  "Row_order_by_plate"
+} else {
+  "Col_order_by_plate"
 }
+# Apply ordering to the study_samples data frame
+ordered_study_samples <- study_samples[order(study_samples[[order_column]]), ]
+
 
 # Extra - count totals for next part and to check
 total_samples <- cc_count + water_count + amap_count + nist_count + study_sample_count
