@@ -224,18 +224,52 @@ ordered_study_samples <- study_samples[order(study_samples[[order_column]]), ]
 
 ## Logic:
 
+## HARD-CODING: 
+# rack1_samples <- study_samples %>%
+#   filter(grepl("[1]$", pos96)) # samples from first rack
+# 
+# rack2_samples <- study_samples %>%
+#   filter(grepl("[2]$", pos96)) #samples from second rack
 
+# DYNAMIC CODING ##########################
 
+# Find all unique endings (last character) of pos96 column
+unique_endings <- study_samples %>%
+  mutate(ending = str_sub(pos96, -1)) %>%
+  pull(ending) %>%
+  unique() %>%
+  sort()
 
+## For each rack number in study_samples (expecting 2),
+## create new df rack#_samples with the samples from that rack only 
+racks 
+for(ending in unique_endings) {
+  assign(paste0("rack", ending, "_samples"), 
+         study_samples %>% filter(str_ends(pos96, ending)))
+}
 
+# Expecting (normal run):
+# rack1_samples: 80 obs
+# rack2_samples: 80 obs
 
-
-
-
-
-
-
-
+first_half <- nrow
+# Determine batching strategy based on sample count
+if (half_samples <= 60) {
+  # Single section: all samples in first section only
+  section1_samples <- half_samples
+  section2_samples <- 0
+  use_two_sections <- FALSE
+} else if (half_samples <= 80) {
+  # Two sections: split evenly between sections
+  section1_samples <- half_samples / 2
+  section2_samples <- total_samples - section1_samples
+  use_two_sections <- TRUE
+} else {
+  # More than 80 samples: use original logic (80 per section)
+  section1_samples <- 80
+  section2_samples <- 80
+  use_two_sections <- TRUE
+}
 
 
 # Extra - count totals for next part and to check

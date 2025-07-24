@@ -33,7 +33,7 @@ data <- read_csv(file_path,
 
 return(d = data)
 } # END CSV READER FUNCTION
-load("App/Mapping/map.Rdata")  # loads 'df' (96-positions and orders) and 'map' (384-positions)
+load("Mapping/map.Rdata")  # loads 'df' (96-positions and orders) and 'map' (384-positions)
 
 ###########################################################################################
 # MANUALLY SET PATHS FOR TESTING 
