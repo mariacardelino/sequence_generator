@@ -9,34 +9,34 @@
 # Continue openspecimen - meeting 7/23 with Sean
 
 #### NEW ORDER 7/21 ###############################################################################
-# 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
-# 1 water (out of 2)
-# 1 NIST (OPTIONAL, out of 1)
+#- 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
+#- 1 water (out of 2)
+#- 1 NIST (OPTIONAL, out of 1)
 
-# Pool 1 
-# Pool 2
-# 3 PFAS (0.1, 0.5, 1)
-# 40 study samples
-# Pool 1
-# Pool 2
-# 40 study samples
-# Pool 1
-# Pool 2
-# 3 PFAS (0.1, 0.5, 1)
+#- Pool 1 #1
+#- Pool 2
+#- 3 PFAS (0.1, 0.5, 1)
+#- 40 study samples
+#- Pool 1 #2
+#- Pool 2
+#- 40 study samples
+#- Pool 1 #3
+#- Pool 2
+#- 3 PFAS (0.1, 0.5, 1)
 
-# 1 'blank' 
-# CAL CURVE (1-8/8)
-# 1 'blank' 
+#- 1 'blank' 
+#- CAL CURVE (1-8/8)
+#- 1 'blank' 
 
-# Pool 1
-# Pool 2
-# 40 study samples
-# Pool 1
-# Pool 2
-# 40 study samples
-# Pool 1
-# Pool 2
-# 3 PFAS (0.1, 0.5, 1)
+#- Pool 1 #4
+#- Pool 2
+#- 40 study samples
+#- Pool 1 #5
+#- Pool 2
+#- 40 study samples
+#- Pool 1 #6
+#- Pool 2
+#- 3 PFAS (0.1, 0.5, 1)
 # 1 AMAP (out of 1)
 # 1 water (out of 2)
 # 1 real blank
