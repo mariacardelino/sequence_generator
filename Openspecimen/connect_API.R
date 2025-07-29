@@ -20,11 +20,12 @@ res <- POST(
 
 if (status_code(res) == 200) {
   body <- content(res, "parsed")
-  token <- body$resetPasswordToken   # Try this
+  token <- body$Token # Successful login, but token == "NULL"
+  #token <- body$resetPasswordToken   # # Successful login and gives a token
   cat("Login successful\n")
 } else {
   stop(paste("Login failed:", status_code(res)))
-} # success!
+} 
 
 
 ### TRYING USING RESET PASSWORD TOKEN
