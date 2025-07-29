@@ -10,7 +10,7 @@
 required_packages <- c(
   "openxlsx", "shinyjs", "tools",
   "shiny", "readr", "dplyr", 
-  "plotly", "readxl", "shinyFiles", "stringr"
+  "plotly", "readxl", "shinyFiles", "stringr", "this.path"
 )
 
 # Install any that are missing
@@ -23,12 +23,8 @@ for (pkg in required_packages) {
   }
 }
 
-# Change the wd to the folder the app is in - MORE ROBUST changed 5/30
-v <- getwd()
-# setwd(v)
-
-# If need to manually set:
-# setwd("R:/diwalke/LC/Run_Lists/Sequence_Generator")
+# Set the wd to the folder the app is in - MORE ROBUST with this.path changed 7/29
+setwd(this.dir())
 
 load("App/Mapping/map.Rdata")  # loads 'df' (96-positions and orders) and 'map' (384-positions)
 

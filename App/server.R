@@ -4,47 +4,18 @@
 ##########################################################################################################
 
 ## TO-DO ####
+
+## FIX: order_pattern()
+
 # ShinyFile selection - decide how to select project path, method files, and output path
-# Sample size adjustments - write_list line 220
-# Continue openspecimen - meeting 7/23 with Sean
+  # Vision: 
+      # place to type the parent E:/ Project path, but you can edit. 
+          # replaces Field 6, "path"
+      # place to type the output parent path for the sequence file, but you can edit
+      # place to type the folder path with all 12 methods, but you can edit
 
-#### NEW ORDER 7/21 ###############################################################################
-#- 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
-#- 1 water (out of 2)
-#- 1 NIST (OPTIONAL, out of 1)
-
-#- Pool 1 #1
-#- Pool 2
-#- 3 PFAS (0.1, 0.5, 1)
-#- 40 study samples
-#- Pool 1 #2
-#- Pool 2
-#- 40 study samples
-#- Pool 1 #3
-#- Pool 2
-#- 3 PFAS (0.1, 0.5, 1)
-
-#- 1 'blank' 
-#- CAL CURVE (1-8/8)
-#- 1 'blank' 
-
-#- Pool 1 #4
-#- Pool 2
-#- 40 study samples
-#- Pool 1 #5
-#- Pool 2
-#- 40 study samples
-#- Pool 1 #6
-#- Pool 2
-#- 3 PFAS (0.1, 0.5, 1)
-# 1 AMAP (out of 1)
-# 1 water (out of 2)
-# 1 real blank
-
-### HANDLING
-# Expecting 80 samples per plate (2 plates)
-# If 60+: split in half
-# If <60: do only one chunk
+# Sample size adjustments 
+# Continue openspecimen 
 
 
 
@@ -79,59 +50,7 @@
 # if study_samples$nonpfms == TRUE then there is a nonPFAS MSMS run after that sample
 
 # for study samples: 
-# batch_size: HARD-CODED TO 20 currently *** FIX - make variable??
-# for each chunk of samples:
-  #' chunk 1: for (i in 1:batch_size), write pos and neg line at i. if msms, add those lines.
-    #' match the 384-wp position and find that line in the pre-written msms lines, write that.
-  #' chunk 2: for (i in ((batch_size+1):(batch_size*2)))
-  #' chunk 3: for (i in ((2*batch_size+1):(batch_size*3)))
-  #' chunk 4: for (i in ((3*batch_size+1):(batch_size*4))) and so on until 8 groups of 20 (160)
-
-
-######### OLD ORDER
-# 1 real blank (front and back labeled 'Blank', middle labeled 'Cal_Std')
-# 1 water (out of 2)
-# 1 NIST (out of 1)
-# 1 AMAP  (out of 2)
-
-# Pool 1 (1-5)
-# Pool 2
-# 20 study samples
-# Pool 1
-# Pool 2
-# 20 study samples
-# Pool 1
-# Pool 2
-# 20 study samples
-# Pool 1
-# Pool 2
-# 20 study samples
-# Pool 1
-# Pool 2 
-
-# 1 'blank' 
-# CAL CURVE (1-8/8)
-# 1 'blank' 
-
-# Pool 1 (6-10)
-# Pool 2
-# 20 study samples
-# Pool 1
-# Pool 2
-# 20 study samples
-# Pool 1
-# Pool 2
-# 20 study samples
-# Pool 1
-# Pool 2
-# 20 study samples (160 total)
-# Pool 1
-# Pool 2 
-
-# 1 AMAP (2/2)
-# MDL (Cal curve)
-# Water (2/2)
-# 1 real blank 
+# batch_size: HARD-CODED TO 40
 
 server <- function(input, output, session) {
   
@@ -923,17 +842,15 @@ server <- function(input, output, session) {
   ####################################################################################################################################
   # Check and add matrix IDs from inventory ###################################
   
+  # Path to the Excel files assigned in run_app.R changed 7/21
+  q_path <- file.path("..", q_filepath)
+  s_path <- file.path("..", s_filepath)
+
   observeEvent(input$add_matrix_ids, {
     # Show processing message
     showNotification("Checking for Matrix ID matches...", 
                      type = "message", duration = NULL, id = "checking_notification")
-    
-    
-    # Path to the Excel files assigned in run_app.R changed 7/21
-    q_path <- file.path("..", q_filepath)
-    s_path <- file.path("..", s_filepath) 
-    
-    # assigned in run_app.R
+
     
     # Check if inventory files exist
     if (!file.exists(q_path)) {
@@ -1045,13 +962,12 @@ server <- function(input, output, session) {
       wb <- openxlsx::loadWorkbook(info$q_path)
       
       # Update 'QAQCs' workbook
-      qaqcs_data <- info$qaqcs_data
-      for(i in 1:nrow(qaqcs_data)) {
-        if(qaqcs_data$Matrix_ID[i] %in% info$current_ids) {
-          qaqcs_data$Analyzed[i] <- TRUE
+      for(i in 1:nrow(qaqc_inventory)) { #for all rows in the QAQC data
+        if(qaqc_inventory$Matrix_ID[i] %in% info$current_ids) {
+          qaqc_inventory$Analyzed[i] <- TRUE
         }
       }
-      openxlsx::writeData(wb, sheet = "QAQCs", x = qaqcs_data, colNames = TRUE)
+      openxlsx::writeData(wb, sheet = "QAQCs", x = qaqc_inventory, colNames = TRUE)
       
       # Save the workbook
       openxlsx::saveWorkbook(wb, info$q_path, overwrite = TRUE)
@@ -1061,13 +977,12 @@ server <- function(input, output, session) {
       wb2 <- openxlsx::loadWorkbook(info$s_path)
       
       # Update 'Samples' workbook
-      samples_data <- info$samples_data
-      for(i in 1:nrow(samples_data)) {
-        if(samples_data$Matrix_ID[i] %in% info$current_ids) {
-          samples_data$Analyzed[i] <- TRUE
+      for(i in 1:nrow(sample_inventory)) {
+        if(sample_inventory$Matrix_ID[i] %in% info$current_ids) {
+          sample_inventory$Analyzed[i] <- TRUE
         }
       }
-      openxlsx::writeData(wb2, sheet = "Samples", x = samples_data, colNames = TRUE)
+      openxlsx::writeData(wb2, sheet = "Samples", x = sample_inventory, colNames = TRUE)
       
       # Save the workbook
       openxlsx::saveWorkbook(wb2, info$s_path, overwrite = TRUE)
@@ -1407,41 +1322,45 @@ server <- function(input, output, session) {
     
     ## Added 7/21 - update QAQCS.xlsx and Samples.xlsx with the study,batch,date ################
     debug_log("13. Updating QAQCS.xlsx with study info...")
+
+    current_ids <- id_container()$ID #does this work?
+    # Update QAQCS #### FIXED 7/29 - did not work if you did not update sheet earlier (info reactive Value)
+    tryCatch({
+      wb <- openxlsx::loadWorkbook(q_path)
+    }, error = function(e) {
+      stop("Failed to load workbook. It might be open in Excel or locked.")
+    })
     
-    # Pull reactive value info from before 
-    info <- values$excel_update_info
-    
-    # Update QAQCS ####
-    wb <- openxlsx::loadWorkbook(info$q_path)
-    qaqcs_data <- info$qaqcs_data
-    
-    for(i in 1:nrow(qaqcs_data)) {
-      if(qaqcs_data$Matrix_ID[i] %in% info$current_ids) { # check?
+    for(i in 1:nrow(qaqc_inventory)) {
+      if(qaqc_inventory$Matrix_ID[i] %in% current_ids) { #get current ids some other way
         #Update with study, batch #, date
-        qaqcs_data$Study_Batch_YYMMDD[i] <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value)
+        qaqc_inventory$Study_Batch_YYMMDD[i] <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value)
       }
     }
-    openxlsx::writeData(wb, sheet = "QAQCs", x = qaqcs_data, colNames = TRUE)
+    openxlsx::writeData(wb, sheet = "QAQCs", x = qaqc_inventory, colNames = TRUE)
     
     # Save the workbook
-    openxlsx::saveWorkbook(wb, info$q_path, overwrite = TRUE)
+    openxlsx::saveWorkbook(wb, q_path, overwrite = TRUE)
     
     debug_log("Successfully updated QAQCS.xlsx")
     
     # Update Samples ####
-    wb2 <- openxlsx::loadWorkbook(info$s_path)
-    samples_data <- info$samples_data
+    tryCatch({
+      wb2 <- openxlsx::loadWorkbook(s_path)
+    }, error = function(e) {
+      stop("Failed to load workbook. It might be open in Excel or locked.")
+    })
     
-    for(i in 1:nrow(samples_data)) {
-      if(samples_data$Matrix_ID[i] %in% info$current_ids) { # check?
+    for(i in 1:nrow(sample_inventory)) {
+      if(sample_inventory$Matrix_ID[i] %in% current_ids) { # check?
         #Update with study, batch #, date
-        samples_data$Study_Batch_YYMMDD[i] <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value)
+        sample_inventory$Study_Batch_YYMMDD[i] <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value)
       }
     }
-    openxlsx::writeData(wb2, sheet = "Samples", x = samples_data, colNames = TRUE)
+    openxlsx::writeData(wb2, sheet = "Samples", x = sample_inventory, colNames = TRUE)
     
     # Save the workbook
-    openxlsx::saveWorkbook(wb2, info$s_path, overwrite = TRUE)
+    openxlsx::saveWorkbook(wb2, s_path, overwrite = TRUE)
     
     debug_log("Successfully updated Samples.xlsx")
   
@@ -1539,9 +1458,9 @@ server <- function(input, output, session) {
     
     if(machine_value == "C18") {
       # old - hardcode destination
-      # directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU0120_250501_MEC_C18/3-Sequence_Files"
+      directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU0120_250501_MEC_C18/3-Sequence_Files"
       
-      directory <- selected_paths$output #already a character path
+      #directory <- selected_paths$output # not gonna happen
       sequence_filepath <- file.path(directory, filename_value)
       debug_log(paste("22. Original full output path:", sequence_filepath))
      
