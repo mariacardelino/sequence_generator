@@ -8,11 +8,11 @@
 ## FIX: order_pattern()
 
 # ShinyFile selection - decide how to select project path, method files, and output path
-  # Vision: 
-      # place to type the parent E:/ Project path, but you can edit. 
-          # replaces Field 6, "path"
-      # place to type the output parent path for the sequence file, but you can edit
-      # place to type the folder path with all 12 methods, but you can edit
+# Vision: 
+# place to type the parent E:/ Project path, but you can edit. 
+# replaces Field 6, "path"
+# place to type the output parent path for the sequence file, but you can edit
+# place to type the folder path with all 12 methods, but you can edit
 
 # Sample size adjustments 
 # Continue openspecimen 
@@ -88,8 +88,10 @@ server <- function(input, output, session) {
   
   ###########################################################################################
   
+  # Initialize all reactive values at the beginning ######
   id_container <- reactiveVal(NULL)  # container to store the df as we go along
   debug_messages <- reactiveVal("")  # For debugging
+  order_pattern <- reactiveVal("bycol") #7/30 moved to top
   
   # Combined reactive values for all tabs
   values <- reactiveValues(
@@ -104,11 +106,12 @@ server <- function(input, output, session) {
       position = NULL,
       path = NULL,
       firstlast = NULL
-      )
+    ),
+    excel_update_info = NULL
   )
   
-
-  #Folder paths for selected locations - 7/16
+  
+  #Folder paths for selected locations - 7/16 ##CHANGE 7/30 -------
   selected_paths <- reactiveValues(
     project = NULL,
     method = NULL,
@@ -496,11 +499,11 @@ server <- function(input, output, session) {
         )
       
       if (plate_type == "Study_Sample") {
-      # Add colored points for filled wells
-      plot <- plot +
-        geom_point(data = filled_wells, 
-                   aes(x = col, y = row),
-                   size = 3, color = "#0D98BA")
+        # Add colored points for filled wells
+        plot <- plot +
+          geom_point(data = filled_wells, 
+                     aes(x = col, y = row),
+                     size = 3, color = "#0D98BA")
       }
       
       if (plate_type == "QAQC") {
@@ -510,7 +513,7 @@ server <- function(input, output, session) {
                      aes(x = col, y = row),
                      size = 3, color = "#71797E")
       } 
-    
+      
     } # end if nrow plate data > 0 statement
     
     return(plot)
@@ -541,9 +544,7 @@ server <- function(input, output, session) {
   
   #### TAB 3: SAMPLE TYPES #########################################################################################
   
-  values <- reactiveValues(
-    samples_fetched = FALSE #do not show until ready
-  )
+  
   
   # MATCH SAMPLES LOGIC #########################
   # This is the Fetch sample ID button.
@@ -559,7 +560,7 @@ server <- function(input, output, session) {
     if (!"Sample_ID" %in% names(current_data)) {
       current_data$Sample_ID <- NA_character_
     }
-
+    
     # Create vectors to track positions for ordering analysis
     matched_ids <- c()
     matched_positions <- c()
@@ -613,7 +614,6 @@ server <- function(input, output, session) {
     # If no sample ID was found in inventory, Sample_ID will be ""
     
     #### Are samples ordered by row or column? ########################################################################################
-    order_pattern <- reactiveVal("bycol")  # Default value
     
     if (length(matched_positions) >= 4) {
       # Extract row letters and column numbers
@@ -625,7 +625,7 @@ server <- function(input, output, session) {
       col_changes <- sum(diff(cols) != 0, na.rm=TRUE)
       
       # Determine ordering pattern and notify
-      if (row_changes > col_changes) {
+      if (row_changes > col_changes) { 
         order_pattern("byrow") 
       } else {
         order_pattern("bycol")
@@ -646,7 +646,7 @@ server <- function(input, output, session) {
     })
     
     ########################################################################################################################################
-
+    
     # Show success message
     showNotification("Sample ID matching completed", type = "message")
     values$samples_fetched <- TRUE
@@ -699,7 +699,7 @@ server <- function(input, output, session) {
     }
   })
   
-
+  
   # Display and store ordered data based on user choice
   ordered_data <- reactive({
     req(id_container())
@@ -845,12 +845,12 @@ server <- function(input, output, session) {
   # Path to the Excel files assigned in run_app.R changed 7/21
   q_path <- file.path("..", q_filepath)
   s_path <- file.path("..", s_filepath)
-
+  
   observeEvent(input$add_matrix_ids, {
     # Show processing message
     showNotification("Checking for Matrix ID matches...", 
                      type = "message", duration = NULL, id = "checking_notification")
-
+    
     
     # Check if inventory files exist
     if (!file.exists(q_path)) {
@@ -1013,7 +1013,7 @@ server <- function(input, output, session) {
   
   # Tab 4- generate sequence list 
   ######################################################################################################
-
+  
   # Run info UI with form fields
   output$run_info <- renderUI({
     req(id_container())
@@ -1093,7 +1093,7 @@ server <- function(input, output, session) {
   
   ## Add user-selected folder paths ##########################################################################
   ## Working 7/22 ? 
-
+  
   # Specify roots 
   roots <- c(
     "Home" = normalizePath("~"),
@@ -1251,8 +1251,8 @@ server <- function(input, output, session) {
   }
   
   
-####################################################################################################################################################
-# Observer for generating sequence list ######################################################################################################################
+  ####################################################################################################################################################
+  # Observer for generating sequence list ######################################################################################################################
   observeEvent(input$write_list, {
     
     debug_log("1. Generate sequence list button clicked")
@@ -1276,7 +1276,7 @@ server <- function(input, output, session) {
     debug_log(paste("8. Machine:", ifelse(is.null(values$run_info$machine), "NULL", values$run_info$machine)))
     debug_log(paste("9. Position:", ifelse(is.null(values$run_info$position), "NULL", values$run_info$position)))
     debug_log(paste("First/Last:", ifelse(is.null(values$run_info$firstlast), "NULL", values$run_info$firstlast)))
-
+    
     # 7/21 add folder paths ?
     # 7/21 - put safeguards so you can't mess up the format?
     
@@ -1291,7 +1291,7 @@ server <- function(input, output, session) {
     if (is.null(values$run_info$machine)) missing_values <- c(missing_values, "machine")
     if (is.null(values$run_info$position)) missing_values <- c(missing_values, "position")
     if (is.null(values$run_info$firstlast)) missing_values <- c(missing_values, "firstlast")
-
+    
     if (length(missing_values) > 0) {
       debug_log(paste("ERROR: Missing required values:", paste(missing_values, collapse=", ")))
       showNotification(paste("Missing required values:", paste(missing_values, collapse=", ")), type = "error")
@@ -1322,9 +1322,12 @@ server <- function(input, output, session) {
     
     ## Added 7/21 - update QAQCS.xlsx and Samples.xlsx with the study,batch,date ################
     debug_log("13. Updating QAQCS.xlsx with study info...")
-
-    current_ids <- id_container()$ID #does this work?
-    # Update QAQCS #### FIXED 7/29 - did not work if you did not update sheet earlier (info reactive Value)
+    
+    current_ids <- id_container()$ID # works
+    
+    # Update QAQCS ####
+    ## FIXED 7/29 
+    ## before - did not work if user did not update sheet earlier (info reactive Value)
     tryCatch({
       wb <- openxlsx::loadWorkbook(q_path)
     }, error = function(e) {
@@ -1341,7 +1344,6 @@ server <- function(input, output, session) {
     
     # Save the workbook
     openxlsx::saveWorkbook(wb, q_path, overwrite = TRUE)
-    
     debug_log("Successfully updated QAQCS.xlsx")
     
     # Update Samples ####
@@ -1361,9 +1363,8 @@ server <- function(input, output, session) {
     
     # Save the workbook
     openxlsx::saveWorkbook(wb2, s_path, overwrite = TRUE)
-    
     debug_log("Successfully updated Samples.xlsx")
-  
+    
     #######################################################################
     
     # Check id_container()
@@ -1463,7 +1464,7 @@ server <- function(input, output, session) {
       #directory <- selected_paths$output # not gonna happen
       sequence_filepath <- file.path(directory, filename_value)
       debug_log(paste("22. Original full output path:", sequence_filepath))
-     
+      
     } else if(machine_value == "HILIC") {
       # old - hardcode destination
       # directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-NANCY/CLU0120_250501_MEC_HILIC/3-Sequence_Files"
@@ -1472,7 +1473,7 @@ server <- function(input, output, session) {
       sequence_filepath <- file.path(directory, filename_value)
       debug_log(paste("22. Original full output path:", sequence_filepath))
     }
-      
+    
     # Check if file exists and get unique filename
     sequence_filepath <- get_unique_filename(sequence_filepath)
     
