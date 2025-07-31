@@ -59,10 +59,7 @@ if (machine == 'C18') {
 studynum <- sub("_.*$", "", study)
 
 filename_pos <- sprintf("%s%s_%s_%spos_", letter, date, studynum, machine)
-# "R250512_CLU0120_C18pos_" --> add 3-digit number in order when printing)
-
 filename_neg <- sprintf("%s%s_%s_%sneg_", letter, date, studynum, machine)
-#### WILL NEED TO ADD THE 3-DIGIT RUN ORDER NUMBER (SAME FOR POS/NEG and MSMS)
 
 # Field 3 - Sample ID 
 # comes from dataframe by row
@@ -73,67 +70,73 @@ comment <- as.numeric(batch)
 # Field 5 - L2 Client
 l2 <- "add"
 
-# Field 6 - Path - this will be selectable later on....
+# Field 6 - PROJECT Path - this will be selectable later on....
+## 7/31 change to be edited by user in last tab
 
-endpath <- sprintf("Batch_%s_%s", batch, date) #Creating the end of the project path (unique to study, batch, and date)
+#endpath <- sprintf("Batch_%s_%s", batch, date) #Creating the end of the project path (unique to study, batch, and date)
+#path <- sprintf('E:/Projects/%s_%s_%s/1-Raw_Files/%s/', study, date, machine, endpath) # ---------------------------------------------
 
-if (machine == 'C18') {
-  # adding option to choose this path ?
-  path <- sprintf('E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/%s/', endpath) # ---------------------------------------------
-  # endpath = Batch_4_250515
-  # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515/"
-  
-  ms2path <- paste0(path, '/MSMS')
-  # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515//MSMS"
-  
-} else if (machine == 'HILIC') {
-  
-  # adding option to choose this path ?
-  path <- sprintf('E:/Projects/CLU0120_MEC_HILIC/1-Raw_Files/%s/', endpath) # ---------------------------------------------
-  # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515/"
-  
-  ms2path <- paste0(path, '/MSMS')
-  # "E:/Projects/CLU0120_250501_MEC_C18/1-Raw_Files/Batch_4_250515//MSMS"
-  
-} 
+path <- project_path
+ms2path <- paste0(path, '/MSMS')
 
 # Field 7 - Instrument Method 
 
-if (machine == 'C18') {
-  
-  # allow for local folder selection? # ------------------------------------------------------------------------------------
-  
-  # Keep C:\\ path for our instrument
-  reg_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240408_C18pos_120k_BottomPump_Channel1"
-  reg_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240408_C18neg_120k_TopPump_Channel2"
+### UPDATED 7/31 - should work for both C18 and HILIC.
 
-  ms2_pfas_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240802_C18pos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
-  ms2_pfas_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240802_C18neg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
+# List all files in folder 
+all_files <- list.files(method_folder, full.names = TRUE)
 
-  ms2_nonpfas_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18pos_BottomPump_Channel1_Water+PP-ddMS2"
-  ms2_nonpfas_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18neg_TopPump_Channel2_Water+PP-ddMS2"
+# REGULAR
+reg_pos <- all_files[grepl("120k", all_files, ignore.case = TRUE) &
+                       grepl("Bottom", all_files, ignore.case = TRUE)]
+reg_neg <- all_files[grepl("120k", all_files, ignore.case = TRUE) &
+                       grepl("Top", all_files, ignore.case = TRUE)]
+# MS2 PFAS
+ms2_pfas_pos <- all_files[grepl("PFAS-inc", all_files, ignore.case = TRUE) &
+                            grepl("Bottom", all_files, ignore.case = TRUE)]
+ms2_pfas_neg <- all_files[grepl("PFAS-inc", all_files, ignore.case = TRUE) &
+                            grepl("Top", all_files, ignore.case = TRUE)]
+# MS2 NON PFAS
+ms2_nonpfas_pos <- all_files[grepl("+PP", all_files, ignore.case = TRUE) &
+                               grepl("Bottom", all_files, ignore.case = TRUE)]
+ms2_nonpfas_neg <- all_files[grepl("+PP", all_files, ignore.case = TRUE) &
+                               grepl("Top", all_files, ignore.case = TRUE)]
+# MS2 NON PFAS
+ms2_pool_pos <- all_files[grepl("Water-ddMS2", all_files, ignore.case = TRUE) &
+                            grepl("Bottom", all_files, ignore.case = TRUE)]
+ms2_pool_neg <- all_files[grepl("Water-ddMS2", all_files, ignore.case = TRUE) &
+                            grepl("Top", all_files, ignore.case = TRUE)]
 
-  ms2_pool_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18pos_BottomPump_Channel1_Water-ddMS2"
-  ms2_pool_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18neg_TopPump_Channel2_Water-ddMS2"
+# Optional: grab the first match
+# target_file <- matched_file[1]
+# folder <- method_folder
 
-  
-} else if (machine == 'HILIC') {
-  
-  # allow for local folder selection? # ------------------------------------------------------------------------------------
-  
-  reg_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240611_HILICpos_120k_BottomPump_Channel1"
-  reg_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240411_HILICneg_120k_TopPump_Channel2"
+##### OLD #####
+# C18
+# reg_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240408_C18pos_120k_BottomPump_Channel1"
+# reg_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240408_C18neg_120k_TopPump_Channel2"
+# 
+# ms2_pfas_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240802_C18pos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
+# ms2_pfas_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240802_C18neg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
+# 
+# ms2_nonpfas_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18pos_BottomPump_Channel1_Water+PP-ddMS2"
+# ms2_nonpfas_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18neg_TopPump_Channel2_Water+PP-ddMS2"
+# 
+# ms2_pool_pos <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18pos_BottomPump_Channel1_Water-ddMS2"
+# ms2_pool_neg <- "C:\\Xcalibur\\methods\\Aria_C18_Methods\\240801_C18neg_TopPump_Channel2_Water-ddMS2"
 
-  ms2_pfas_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240802_HILICpos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
-  ms2_pfas_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240802_HILICneg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
-
-  ms2_nonpfas_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICpos_BottomPump_Channel1_Water+PP-ddMS2"
-  ms2_nonpfas_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICneg_TopPump_Channel2_Water+PP-ddMS2"
-
-  ms2_pool_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICpos_BottomPump_Channel1_Water-ddMS2"
-  ms2_pool_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICneg_TopPump_Channel2_Water-ddMS2"
-
-} 
+# HILIC
+# reg_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240611_HILICpos_120k_BottomPump_Channel1"
+# reg_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240411_HILICneg_120k_TopPump_Channel2"
+# 
+# ms2_pfas_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240802_HILICpos_BottomPump_Channel1_Water_PFAS-inc-ddMS2"
+# ms2_pfas_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240802_HILICneg_TopPump_Channel2_Water_PFAS-inc-ddMS2"
+# 
+# ms2_nonpfas_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICpos_BottomPump_Channel1_Water+PP-ddMS2"
+# ms2_nonpfas_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICneg_TopPump_Channel2_Water+PP-ddMS2"
+# 
+# ms2_pool_pos <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICpos_BottomPump_Channel1_Water-ddMS2"
+# ms2_pool_neg <- "C:\\Xcalibur\\methods\\Aria Methods\\240801_HILICneg_TopPump_Channel2_Water-ddMS2"
 
 # Field 8 - Position
 # Front is shiny input, end comes from pos384 in df
@@ -202,7 +205,7 @@ amap_count <- nrow(amaps)
 ###  NISTS ############
 nists <- final_data[grepl("^NIST", final_data$Sample_ID), ]
 nist_count <- nrow(nists)
-  # OPTIONAL - if nist_count == 0
+# OPTIONAL - if nist_count == 0
 
 ###  STUDY SAMPLES ############
 pattern_a <- "^A\\d{7}$"
@@ -229,7 +232,7 @@ ordered_study_samples <- study_samples[order(study_samples[[order_column]]), ]
 # If <60: do only one chunk
 
 # Separate and group by study sample plate
-  # Find all unique endings (last character) of pos96 column
+# Find all unique endings (last character) of pos96 column
 unique_endings <- study_samples %>%
   mutate(ending = str_sub(pos96, -1)) %>%
   pull(ending) %>%
@@ -237,7 +240,7 @@ unique_endings <- study_samples %>%
   sort()
 
 ## For each rack number in study_samples (expecting 2),
-  ## create new df rack#_samples with the samples from that rack only
+## create new df rack#_samples with the samples from that rack only
 rack_samples_list <- list()
 
 for(ending in unique_endings) {
@@ -328,8 +331,8 @@ if(total_count == total_samples) {
 # BLANKS lines ####################################################
 
 # For now: 4 blanks 
-    # 2 at the beginning and end labeled 'Blank' 
-    # 2 surrounding the Cal Curve labeled 'Cal_Std'
+# 2 at the beginning and end labeled 'Blank' 
+# 2 surrounding the Cal Curve labeled 'Cal_Std'
 
 num_blanks <- 4 # 4 blanks
 # Vector for storing lines
@@ -612,18 +615,18 @@ if (pool_count == 20) {
   pools1$runorder <- sprintf("%02d", 1:10)
   pools2$runorder <- sprintf("%02d", 1:10)
   cat("Found 20 pools")
-#} else {
+  #} else {
   #warning(paste("Expected 20 pools but found", pool_count, "- runorder not assigned"))
 }
 
 # New - check for 12 pools
 if (pool_count == 12) {
-   pools1$runorder <- sprintf("%02d", 1:6)
-   pools2$runorder <- sprintf("%02d", 1:6)
-   cat("Found 12 pools")
- } else {
-   warning(paste("Expected 12 pools but found", pool_count, "- runorder not assigned"))
- }
+  pools1$runorder <- sprintf("%02d", 1:6)
+  pools2$runorder <- sprintf("%02d", 1:6)
+  cat("Found 12 pools")
+} else {
+  warning(paste("Expected 12 pools but found", pool_count, "- runorder not assigned"))
+}
 
 ############ POOL 1 ################################
 
@@ -924,7 +927,7 @@ pfas_ms2_positions <- c("C3", "E17", "G19", "C10", "E4", "M12")
 nonpfas_ms2_positions <- c("E11", "G17", "C16", "I14", "M8", "O20")
 
 # ^^^^ Maybe in the app some day you can select which samples/positions you want to run these on -------------------------------------------
-  # Or have the option to choose random?
+# Or have the option to choose random?
 
 # check they are study sample positions below ###########################
 
@@ -1321,9 +1324,9 @@ if (study_racks == 2) {
   run_order <- run_order + 1
   
   batch_size <- second_half_size 
-    # Again, this only runs if there are two study racks.
-    # Again, batch_size will be the FULL second rack if there are less than 60 samples in the rack.
-    # batch_size will be HALF the second rack if there are 60 or more samples.
+  # Again, this only runs if there are two study racks.
+  # Again, batch_size will be the FULL second rack if there are less than 60 samples in the rack.
+  # batch_size will be HALF the second rack if there are 60 or more samples.
   
   # 3 of 4 groups of 40 study samples (batch_size = 40) ######################################
   for (i in ((2*batch_size+1):(batch_size*3))) { #81-120
@@ -1401,7 +1404,7 @@ if (study_racks == 2) {
   writeLines(modify(pool2_lines_pos[6], run_order), file_conn) # Pool 2
   writeLines(modify(pool2_lines_neg[6], run_order), file_conn)
   run_order <- run_order + 1
-
+  
 } # RESUME if only one study rack.
 
 ## 7/28?? ADD 3 PFAS CURVE HERE (3 of 3)
@@ -1432,4 +1435,3 @@ writeLines(modify(blank_lines_neg[num_blanks], run_order), file_conn)
 close(file_conn)
 gc() # Force garbage collector helps release lingering file handles
 # So you can open without read-only
-

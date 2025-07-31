@@ -96,6 +96,7 @@ server <- function(input, output, session) {
   # Combined reactive values for all tabs
   values <- reactiveValues(
     samples_fetched = FALSE,
+    
     run_info = list(
       date = NULL,
       study = NULL,
@@ -107,17 +108,18 @@ server <- function(input, output, session) {
       path = NULL,
       firstlast = NULL
     ),
-    excel_update_info = NULL
+    
+    excel_update_info = NULL,
+    
+    allow_path_autofill = FALSE,
+    
+    # Final paths user confirmed
+    final_paths = list(
+      path = NULL,
+      method_folder = NULL,
+      output_path = NULL
+    )
   )
-  
-  
-  #Folder paths for selected locations - 7/16 ##CHANGE 7/30 -------
-  selected_paths <- reactiveValues(
-    project = NULL,
-    method = NULL,
-    output = NULL
-  )
-  
   
   #### PART ONE: MICRONIC PLATE SCAN DATA #########################################################################################
   
@@ -1085,44 +1087,45 @@ server <- function(input, output, session) {
     values$run_info$position <- input$position_input
     values$run_info$firstlast <- as.logical(input$first_last_batch)
     
+    # Use run info to create suggestions for the folderpaths
+    batch <- values$run_info$batch
+    date <- values$run_info$date
+    machine <- values$run_info$machine
+    study <- values$run_info$study
+    
+    endpath <- sprintf("Batch_%s_%s", batch, date)
+    suggested_project_path <- sprintf('E:/Projects/%s_%s_%s/1-Raw_Files/%s/', study, date, machine, endpath) 
+    
+    
+    if (machine == "C18") {
+      suggested_method_folder <- "C:\\Xcalibur\\methods\\Aria_C18_Methods"
+      name <- 'RALPH'
+    } else if (machine == "HILIC") {
+      suggested_method_folder <- "C:\\Xcalibur\\methods\\Aria Methods"
+      name <- 'NANCY'
+    }
+    
+    suggested_output_path <- sprintf('R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-%s/%s_%s_%s/3-Sequence_Files', name, study, date, machine)
+    
+    updateTextInput(session, "project_path", value = suggested_project_path)
+    updateTextInput(session, "method_folder", value = suggested_method_folder)
+    updateTextInput(session, "output_path", value = suggested_output_path)
+    
+    
     # Show confirmation to user
     showNotification("Run information updated.", 
                      type = "message", 
                      duration = 3)
   })
   
-  ## Add user-selected folder paths ##########################################################################
-  ## Working 7/22 ? 
-  
-  # Specify roots 
-  roots <- c(
-    "Home" = normalizePath("~"),
-    "Root" = "C:/",         # or "/" on Linux/Mac
-    "R Drive" = "R:/"
-  )
-  
-  # Enable folder selection for each input
-  shinyDirChoose(input, 'project_path', roots = roots, session = session) # Project path - auto?
-  shinyDirChoose(input, 'method_path', roots = roots, session = session) # Method files - select folder then auto-assign method?
-  shinyDirChoose(input, 'output_path', roots = roots, session = session) # Output path - type?
-  
-  # Observe selections and convert to full paths
-  observe({
-    if (is.list(input$project_path) && !is.null(input$project_path$path)) {
-      selected_paths$project <- parseDirPath(roots, input$project_path)
-      cat("Selected project path:", selected_paths$project, "\n")
-    }
-    
-    if (is.list(input$method_path) && !is.null(input$method_path$path)) {
-      selected_paths$method <- parseDirPath(roots, input$method_path)
-      cat("Selected method path:", selected_paths$method, "\n")
-    }
-    
-    if (is.list(input$output_path) && !is.null(input$output_path$path)) {
-      selected_paths$output <- parseDirPath(roots, input$output_path)
-      cat("Selected output path:", selected_paths$output, "\n")
-    }
+  observeEvent(input$confirm_paths, {
+    values$final_paths <- list(
+      path = input$project_path,
+      method_folder = input$method_folder,
+      output_path = input$output_path
+    )
   })
+  
   
   # GENERATE SEQUENCE LIST -------------------------------------------------------------------------
   # UI - button
@@ -1310,10 +1313,10 @@ server <- function(input, output, session) {
     position_value <- values$run_info$position
     firstlast_value <- values$run_info$firstlast
     
-    # Folder paths
-    project_path <- selected_paths$project
-    method_path <- selected_paths$method
-    output_path <- selected_paths$output
+    # Updated folder paths
+    path <- values$final_paths$path
+    method_folder <- values$final_paths$method_folder
+    output_path <- values$final_paths$output_path
     
     # Create filename with inputs
     filename_value <- paste0(sub("_.*$", "", study_value),"_", batch_value,"_", date_value,"_", machine_value)
@@ -1412,10 +1415,6 @@ server <- function(input, output, session) {
       app_wd <- getwd()
       debug_log(paste("18. Working directory:", app_wd))
       
-      # # Go up one directory - comment out 5/29
-      # parent_wd <- dirname(app_wd)
-      # debug_log(paste("18a. Adjusted to parent directory:", parent_wd))
-      
       # Check for required script files with more detail
       script_file <- "write_list.R"
       missing_files <- character(0)
@@ -1454,26 +1453,12 @@ server <- function(input, output, session) {
     debug_log(paste("21. Output filename:", filename_value))
     
     # Set output file path ##########################################################################
-    # CHANGED 5/29 to instrument folder
-    # Changed 7/16 to selected_paths$output (from new input button)
-    
-    if(machine_value == "C18") {
-      # old - hardcode destination
-      directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU0120_250501_MEC_C18/3-Sequence_Files"
+    # old - hardcode destination
+    directory <- output_path # dynamic, 7/31 from above
       
-      #directory <- selected_paths$output # not gonna happen
-      sequence_filepath <- file.path(directory, filename_value)
-      debug_log(paste("22. Original full output path:", sequence_filepath))
+    sequence_filepath <- file.path(directory, filename_value)
+    debug_log(paste("22. Original full output path:", sequence_filepath))
       
-    } else if(machine_value == "HILIC") {
-      # old - hardcode destination
-      # directory <- "R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-NANCY/CLU0120_250501_MEC_HILIC/3-Sequence_Files"
-      
-      directory <- selected_paths$output #already a character path
-      sequence_filepath <- file.path(directory, filename_value)
-      debug_log(paste("22. Original full output path:", sequence_filepath))
-    }
-    
     # Check if file exists and get unique filename
     sequence_filepath <- get_unique_filename(sequence_filepath)
     
@@ -1543,13 +1528,10 @@ server <- function(input, output, session) {
         assign("sequence_filename", filename_value, envir = .GlobalEnv)
         assign("sequence_filepath", sequence_filepath, envir = .GlobalEnv)
         
-        assign("project_folder", project_path, envir = .GlobalEnv)
-        assign("method_folder", method_path, envir = .GlobalEnv)
-        assign("output_folder", output_path, envir = .GlobalEnv)
-        # 7/21 do something with these in write_list?
-        
-        
-        
+        assign("project_path", path, envir = .GlobalEnv)
+        assign("method_folder", method_folder, envir = .GlobalEnv)
+        assign("output_path", output_path, envir = .GlobalEnv) # changed 7/31
+
         debug_log("28. All variables set in global environment")
         
         app_wd <- getwd()

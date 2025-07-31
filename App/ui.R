@@ -129,13 +129,13 @@ ui <- fluidPage(
                    h3("Select filepaths"),
                    fluidRow(
                      column(4,
-                            shinyFilesButton("project_path", "1. Project filepath", "Select project folder", multiple = FALSE)
+                            textInput("project_path", "1. Project filepath", value = NULL)
                      ),
                      column(4,
-                            shinyFilesButton("method_path", "2. Method folder", "Select method folder", multiple = FALSE)
+                            textInput("method_path", "2. Method folder", value = NULL)
                      ),
                      column(4,
-                            shinyFilesButton("output_path", "3. Output filepath", "Select output folder", multiple = FALSE)
+                            textInput("output_path", "3. Output filepath", value = NULL)
                      )
                    )
                )
