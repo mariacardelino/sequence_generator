@@ -112,35 +112,50 @@ ui <- fluidPage(
     tabPanel(
       "4. Generate sequence list",
       fluidRow(
-        column(8, 
+        column(12, 
                h3("Enter Run Info"),
-               uiOutput("run_info"),
-        ),
-        column(4,
-               h3("Generate Sequence List"),
-               uiOutput("generate_list")
+               uiOutput("run_info")
         )
+
       ),
       
       # Filepath selection panel
       fluidRow(
         column(12,
                div(style = "background-color: #e6f4e6; padding: 15px; border: 1px solid #c3e6cb; border-radius: 5px; margin-top: 30px;",
-                   h3("Select filepaths"),
+                   h3("Check the generated filepaths and edit if needed."),
                    fluidRow(
-                     column(4,
-                            textInput("project_path", "1. Project filepath", value = NULL)
-                     ),
-                     column(4,
-                            textInput("method_path", "2. Method folder", value = NULL)
-                     ),
-                     column(4,
-                            textInput("output_path", "3. Output filepath", value = NULL)
+                     column(12,
+                            textInput("project_path", "1. Project filepath", value = NULL, width = "100%")
+                     )
+                   ),
+                   fluidRow(
+                     column(12,
+                            textInput("method_folder", "2. Method folder", value = NULL, width = "100%")
+                     )
+                   ),
+                   fluidRow(
+                     column(12,
+                            textInput("output_path", "3. Output filepath", value = NULL, width = "100%")
+                     )
+                   ),
+                   fluidRow(
+                     column(12,
+                            actionButton("confirm_paths", "Confirm Paths", 
+                                         style = "margin-top: 10px; width: 100%; background-color: #4CAF50; color: white;")
                      )
                    )
                )
         )
       ),
+      
+      fluidRow(
+        column(12,
+               h3("Generate Sequence List"),
+               uiOutput("generate_list")
+        )
+      ),
+      
       # Add the debug console container below
       fluidRow(
         column(12,

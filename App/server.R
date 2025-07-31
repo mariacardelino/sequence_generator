@@ -5,19 +5,7 @@
 
 ## TO-DO ####
 
-## FIX: order_pattern()
-
-# ShinyFile selection - decide how to select project path, method files, and output path
-# Vision: 
-# place to type the parent E:/ Project path, but you can edit. 
-# replaces Field 6, "path"
-# place to type the output parent path for the sequence file, but you can edit
-# place to type the folder path with all 12 methods, but you can edit
-
-# Sample size adjustments 
-# Continue openspecimen 
-
-
+## ERROR in write_sequence(): object 'final_data' not found
 
 ############### NOTES ABOUT SAMPLE LOGIC BY TYPE
 
@@ -49,8 +37,8 @@
 # if study_samples$pfms == TRUE then there is a PFAS MSMS run after that sample
 # if study_samples$nonpfms == TRUE then there is a nonPFAS MSMS run after that sample
 
-# for study samples: 
-# batch_size: HARD-CODED TO 40
+
+source("write_list.R") #7/31 source once at the top instead
 
 server <- function(input, output, session) {
   
@@ -115,7 +103,7 @@ server <- function(input, output, session) {
     
     # Final paths user confirmed
     final_paths = list(
-      path = NULL,
+      project_path = NULL,
       method_folder = NULL,
       output_path = NULL
     )
@@ -925,7 +913,7 @@ server <- function(input, output, session) {
         ))
       }
       
-      # Store match information for use in the NEXT STEP --------------
+      # Store match information for use in the NEXT STEP 
       values$excel_update_info <- list(
         q_path = q_path,
         s_path = s_path,
@@ -1001,6 +989,22 @@ server <- function(input, output, session) {
     })
   }) ### END CONFIRM - UPDATE MATRIX ID 'ANALYZED' Column.
   
+  # Save to environment button
+  observeEvent(input$save_to_env, {
+    req(id_container())
+    
+    # Get the current data
+    data_to_save <- id_container()
+    
+    # Save to the global environment
+    assign("final_plate_data", data_to_save, envir = .GlobalEnv)
+    # Show a success notification
+    showNotification(
+      "Data saved to R environment as 'final_plate_data'", 
+      type = "message",
+      duration = 5
+    )
+  })
   
   ####################################################################################################################################
   
@@ -1010,7 +1014,6 @@ server <- function(input, output, session) {
     # Switch to the fourth tab when the button is clicked
     updateTabsetPanel(session, "tabs", selected = "4. Generate sequence list")
   })
-  
   
   
   # Tab 4- generate sequence list 
@@ -1098,17 +1101,17 @@ server <- function(input, output, session) {
     
     
     if (machine == "C18") {
-      suggested_method_folder <- "C:\\Xcalibur\\methods\\Aria_C18_Methods"
+      suggested_method_folder <- 'C:/Xcalibur/methods/Aria_C18_Methods'
       name <- 'RALPH'
     } else if (machine == "HILIC") {
-      suggested_method_folder <- "C:\\Xcalibur\\methods\\Aria Methods"
+      suggested_method_folder <- 'C:/Xcalibur/methods/Aria Methods'
       name <- 'NANCY'
     }
     
     suggested_output_path <- sprintf('R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-%s/%s_%s_%s/3-Sequence_Files', name, study, date, machine)
     
     updateTextInput(session, "project_path", value = suggested_project_path)
-    updateTextInput(session, "method_folder", value = suggested_method_folder)
+    updateTextInput(session, "method_folder", value = suggested_method_folder) 
     updateTextInput(session, "output_path", value = suggested_output_path)
     
     
@@ -1120,72 +1123,26 @@ server <- function(input, output, session) {
   
   observeEvent(input$confirm_paths, {
     values$final_paths <- list(
-      path = input$project_path,
+      project_path = input$project_path,
       method_folder = input$method_folder,
       output_path = input$output_path
     )
   })
   
   
-  # GENERATE SEQUENCE LIST -------------------------------------------------------------------------
+  # GENERATE SEQUENCE LIST 
   # UI - button
   output$generate_list <- renderUI({
     req(id_container())
     
     div(
       style = "padding: 10px; background-color: #e8f4f8; border: 1px solid #d1e0e0; border-radius: 5px;",
-      actionButton("write_list", "Generate Sequence List", class = "btn-primary"),
-      br(), br(),
-      # Add section for status 
-      uiOutput("sequence_status")
+      actionButton("write_list", "Generate Sequence List", class = "btn-primary")
     )
   })
   
   # Functions for later #####################################################################
   
-  # UI for sequence status - fixed 7/17
-  output$sequence_status <- renderUI({
-    output_path <- selected_paths$output
-    
-    # Only proceed if a folder has been selected and it's a valid character string
-    if (!is.null(output_path) &&
-        is.character(output_path) &&
-        nzchar(output_path) &&
-        dir.exists(output_path)) {
-      
-      div(
-        style = "margin-top: 10px; padding: 10px; background-color: #e8f8e8; border: 1px solid #d0e0d0; border-radius: 5px;",
-        h4("Sequence List Generated!", style = "margin-top: 0; color: #2c3e50;"),
-        p(paste("Folder selected:", basename(output_path))),
-        div(
-          style = "display: flex; gap: 10px;",
-          actionButton("view_sequence", "View Folder", icon = icon("eye"), 
-                       style = "color: white; background-color: #3498db;")
-        )
-      )
-      
-    } else {
-      # Return nothing until the folder is selected
-      NULL
-    }
-  })
-  
-  # Save to environment button
-  observeEvent(input$save_to_env, {
-    req(id_container())
-    
-    # Get the current data
-    data_to_save <- id_container()
-    
-    # Save to the global environment
-    assign("final_plate_data", data_to_save, envir = .GlobalEnv)
-    # Show a success notification
-    showNotification(
-      "Data saved to R environment as 'final_plate_data'", 
-      type = "message",
-      duration = 5
-    )
-  })
   
   # View button handler
   observeEvent(input$view_sequence, {
@@ -1280,10 +1237,6 @@ server <- function(input, output, session) {
     debug_log(paste("9. Position:", ifelse(is.null(values$run_info$position), "NULL", values$run_info$position)))
     debug_log(paste("First/Last:", ifelse(is.null(values$run_info$firstlast), "NULL", values$run_info$firstlast)))
     
-    # 7/21 add folder paths ?
-    # 7/21 - put safeguards so you can't mess up the format?
-    
-    
     # Check if any required values are missing
     missing_values <- character(0)
     if (is.null(values$run_info$date)) missing_values <- c(missing_values, "date")
@@ -1294,6 +1247,10 @@ server <- function(input, output, session) {
     if (is.null(values$run_info$machine)) missing_values <- c(missing_values, "machine")
     if (is.null(values$run_info$position)) missing_values <- c(missing_values, "position")
     if (is.null(values$run_info$firstlast)) missing_values <- c(missing_values, "firstlast")
+
+    if (is.null(values$final_paths$project_path)) missing_values <- c(missing_values, "path")
+    if (is.null(values$final_paths$method_folder)) missing_values <- c(missing_values, "method_folder")
+    if (is.null(values$final_paths$output_path)) missing_values <- c(missing_values, "output_path")
     
     if (length(missing_values) > 0) {
       debug_log(paste("ERROR: Missing required values:", paste(missing_values, collapse=", ")))
@@ -1312,9 +1269,10 @@ server <- function(input, output, session) {
     machine_value <- values$run_info$machine
     position_value <- values$run_info$position
     firstlast_value <- values$run_info$firstlast
+    final_data <- id_container()
     
     # Updated folder paths
-    path <- values$final_paths$path
+    project_path <- values$final_paths$project_path
     method_folder <- values$final_paths$method_folder
     output_path <- values$final_paths$output_path
     
@@ -1323,7 +1281,6 @@ server <- function(input, output, session) {
     
     debug_log("Successfully accessed all run info values")
     
-    ## Added 7/21 - update QAQCS.xlsx and Samples.xlsx with the study,batch,date ################
     debug_log("13. Updating QAQCS.xlsx with study info...")
     
     current_ids <- id_container()$ID # works
@@ -1454,13 +1411,13 @@ server <- function(input, output, session) {
     
     # Set output file path ##########################################################################
     # old - hardcode destination
-    directory <- output_path # dynamic, 7/31 from above
+    directory <- output_path 
       
     sequence_filepath <- file.path(directory, filename_value)
-    debug_log(paste("22. Original full output path:", sequence_filepath))
+    debug_log(paste("22. Original full output path:", sequence_filepath)) 
       
     # Check if file exists and get unique filename
-    sequence_filepath <- get_unique_filename(sequence_filepath)
+    sequence_filepath <- get_unique_filename(sequence_filepath) 
     
     # Update filename_value to match the new path (for display purposes)
     filename_value <- basename(sequence_filepath)
@@ -1511,110 +1468,98 @@ server <- function(input, output, session) {
       debug_log("26. Starting main sequence generation in try-catch block")
       
       tryCatch({
-        debug_log("27. Setting global variables...")
+        debug_log("27. Preparing to call write_sequence()...")
         
-        # Assign values to the global environment
-        assign("date", date_value, envir = .GlobalEnv)
-        assign("study", study_value, envir = .GlobalEnv)
-        assign("batch", batch_value, envir = .GlobalEnv)
-        assign("rack", rack_value, envir = .GlobalEnv)
-        assign("tech", tech_value, envir = .GlobalEnv)
-        assign("machine", machine_value, envir = .GlobalEnv)
-        assign("pos", position_value, envir = .GlobalEnv)
-        assign("firstlast", firstlast_value, envir = .GlobalEnv)
+        # Create list of inputs to pass
+        params <- list(
+          date = date_value,
+          study = study_value,
+          batch = batch_value,
+          rack = rack_value,
+          tech = tech_value,
+          machine = machine_value,
+          pos = position_value,
+          firstlast = firstlast_value,
+          final_data = final_data,
+          sequence_filename = filename_value,
+          sequence_filepath = sequence_filepath,
+          project_path = project_path,
+          method_folder = method_folder,
+          output_path = output_path,
+          ordering_preference = order_pattern()
+        )
         
-        assign("final_data", final_data, envir = .GlobalEnv)
+        # Call the function from write_list.R
+        write_sequence(params)
         
-        assign("sequence_filename", filename_value, envir = .GlobalEnv)
-        assign("sequence_filepath", sequence_filepath, envir = .GlobalEnv)
-        
-        assign("project_path", path, envir = .GlobalEnv)
-        assign("method_folder", method_folder, envir = .GlobalEnv)
-        assign("output_path", output_path, envir = .GlobalEnv) # changed 7/31
-
-        debug_log("28. All variables set in global environment")
-        
-        app_wd <- getwd()
-        
-        # Proceed to machine-specific script
-        incProgress(0.5, detail = paste("Processing", machine_value, "sequence..."))
-        
-        if(machine_value == "C18") {
-          debug_log("29. Attempting to source write_list.R to generate C18 sequence list...")
-          
-          source_result <- try({
-            source(file.path(app_wd, "write_list.R"))
-          }, silent = FALSE)
-          
-          if(inherits(source_result, "try-error")) {
-            debug_log(paste("ERROR in write_list.R:", geterrmessage()))
-            stop(paste("Error in write_list.R:", geterrmessage()))
-          }
-          
-          debug_log("30. Successfully executed write_list.R")
-        } else {
-          debug_log("29. Attempting to source write_list.R to generate HILIC sequence list...")
-          
-          source_result <- try({
-            source(file.path(app_wd, "write_list.R"))
-          }, silent = FALSE)
-          
-          if(inherits(source_result, "try-error")) {
-            debug_log(paste("ERROR in write_list.R:", geterrmessage()))
-            stop(paste("Error in write_list.R:", geterrmessage()))
-          }
-          
-          debug_log("30. Successfully executed write_list.R")
-        }
-        
-        # Verify output file exists
-        incProgress(0.9, detail = "Verifying output...")
-        
-        if(file.exists(sequence_filepath)) {
-          debug_log(paste("31. SUCCESS: File created at", sequence_filepath))
-          debug_log(paste("32. File size:", file.info(sequence_filepath)$size, "bytes"))
-          
-          # Store the path for UI updates
-          values$generated_file_path <- sequence_filepath
-          
-          # Show success notification
-          showNotification(
-            paste0(
-              "Sequence list successfully generated! ",
-              "Saved as: ", filename_value
-            ), 
-            type = "message", 
-            duration = 5
-          )
-        } else {
-          debug_log(paste("ERROR: Output file was not created at", sequence_filepath))
-          
-          # List what files were created in the directory
-          files_created <- list.files(output_dir, pattern = "\\.csv$")
-          if(length(files_created) > 0) {
-            debug_log(paste("CSV files in directory:", paste(files_created, collapse=", ")))
-          }
-          
-          showNotification("Sequence file was not created", type = "error")
-        }
+        debug_log("30. Successfully executed write_sequence()")
         
       }, error = function(e) {
-        error_msg <- paste("ERROR:", e$message)
-        debug_log(error_msg)
-        showNotification(error_msg, type = "error", duration = 10)
-      }, finally = {
-        # Clean up global environment
-        debug_log("33. Cleaning up global variables...")
-        cleanup_vars <- c("date", "study", "batch", "rack", "tech", "machine", "pos", 
-                          "firstlast", "sequence_filename", "final_data", "sequence_filepath")
-        rm(list = intersect(cleanup_vars, ls(.GlobalEnv)), envir = .GlobalEnv)
-      })
-      
+        debug_log(paste("ERROR in write_sequence():", e$message))
+        showNotification(paste("Error generating sequence:", e$message), type = "error")
+      }) # END TRY CATCH
+        
+      # Verify output file exists
+      incProgress(0.9, detail = "Verifying output...")
+        
+      if(file.exists(sequence_filepath)) {
+        debug_log(paste("31. SUCCESS: File created at", sequence_filepath))
+        debug_log(paste("32. File size:", file.info(sequence_filepath)$size, "bytes"))
+          
+        # Store the path for UI updates
+        values$generated_file_path <- sequence_filepath
+          
+        # Show success notification
+        showNotification(
+          paste0(
+            "Sequence list successfully generated! ",
+            "Saved as: ", filename_value
+          ), 
+          type = "message", 
+          duration = 5
+        )
+      } else {
+        debug_log(paste("ERROR: Output file was not created at", sequence_filepath))
+        }
+        
       # Complete progress
       debug_log("34. Updating progress indicator to complete")
       incProgress(1, detail = "Complete!")
-    })
+      
+      }) # end withProgress chunk
     
-    debug_log("35. Sequence generation process complete")
+     debug_log("35. Sequence generation process complete")
+     
   }) #################### END 'WRITE LIST' OBSERVER ############################################################################################
+
+  # # UI for sequence status - fixed 7/17 edited 7/31 removed 7/31
+  # output$sequence_status <- renderUI({
+  #   
+  #   output_path <- values$final_paths$output_path
+  #   
+  #   # Only proceed if a folder has been selected and it's a valid character string
+  #   if (!is.null(output_path) &&
+  #       is.character(output_path) &&
+  #       nzchar(output_path) &&
+  #       dir.exists(output_path) &&
+  #       file.exists(sequence_filepath)) { # added 7/31
+  #     # object 'sequence_filepath' not found
+  #     
+  #     div(
+  #       style = "margin-top: 10px; padding: 10px; background-color: #e8f8e8; border: 1px solid #d0e0d0; border-radius: 5px;",
+  #       h4("Sequence List Generated!", style = "margin-top: 0; color: #2c3e50;"),
+  #       p(paste("Folder selected:", basename(output_path))),
+  #       div(
+  #         style = "display: flex; gap: 10px;",
+  #         actionButton("view_sequence", "View Folder", icon = icon("eye"), 
+  #                      style = "color: white; background-color: #3498db;")
+  #       )
+  #     )
+  #     
+  #   } else {
+  #     # Return nothing until the folder is selected
+  #     NULL
+  #   }
+  # }) # end sequence_status observer
+  
 } # END SERVER 

@@ -35,9 +35,11 @@ load("App/Mapping/map.Rdata")  # loads 'df' (96-positions and orders) and 'map' 
 q_filepath <- "QAQCS.xlsx"
 s_filepath <- "Samples.xlsx"
 
-qaqcs <- read_excel(q_filepath, sheet = "QAQCs")
-samples <- read_excel(s_filepath, sheet = "Samples")
+qaqcs <- read_excel(q_filepath, sheet = "QAQCs", col_types = "text")
+qaqcs$Analyzed <- as.logical(qaqcs$Analyzed)
 
+samples <- read_excel(s_filepath, sheet = "Samples", col_types = "text")
+samples$Analyzed <- as.logical(samples$Analyzed)
 # altering?
 
 qaqc_inventory <- qaqcs
