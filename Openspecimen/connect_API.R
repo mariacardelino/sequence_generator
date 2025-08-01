@@ -5,7 +5,7 @@ library(dplyr)
 base_url <- "https://openspecimen-dev.emory.edu/openspecimen/rest/ng"
 
 username <- 'CLUES_API'
-password <- '1518Clifton'
+password <- 'Clues2025!'
 
 ## LOGIN #############################################
 res <- POST(
@@ -20,7 +20,7 @@ res <- POST(
 
 if (status_code(res) == 200) {
   body <- content(res, "parsed")
-  token <- body$Token # Successful login, but token == "NULL"
+  token <- body$token # Successful login, but token == "NULL"
   #token <- body$resetPasswordToken   # # Successful login and gives a token
   cat("Login successful\n")
 } else {
