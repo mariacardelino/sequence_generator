@@ -5,7 +5,7 @@ library(dplyr)
 base_url <- "https://openspecimen-dev.emory.edu/openspecimen/rest/ng"
 
 username <- 'CLUES_API'
-password <- 'Clues2025!'
+password <- 'Clues2025!' #8/1 changed password manually, works
 
 ## LOGIN #############################################
 res <- POST(

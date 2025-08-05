@@ -4,8 +4,50 @@
 ##########################################################################################################
 
 ## TO-DO ####
+#ERROR in write_sequence(): object 'final_data' not found
 
 ## ERROR in write_sequence(): object 'final_data' not found
+
+#8/4/25 when run on Ralph computer:
+# [DEBUG] 1. Generate sequence list button clicked 
+# [DEBUG] 2. Values exist: TRUE 
+# [DEBUG] 3. Checking required inputs... 
+# [DEBUG] 4. Date: 250804 
+# [DEBUG] 5. Study: CLU_TEST 
+# [DEBUG] 6. Batch: 05 
+# [DEBUG] 6a. Racks: 7,8 
+# [DEBUG] 7. Tech: MC 
+# [DEBUG] 8. Machine: C18 
+# [DEBUG] 9. Position: R 
+# [DEBUG] First/Last: FALSE 
+# [DEBUG] 12. All required run info values exist 
+# [DEBUG] Successfully accessed all run info values 
+# [DEBUG] 13. Updating QAQCS.xlsx with study info... 
+# [DEBUG] Successfully updated QAQCS.xlsx 
+# [DEBUG] Successfully updated Samples.xlsx 
+# [DEBUG] 14. Checking sample data... 
+# [DEBUG] 15. Successfully retrieved data from id_container() 
+# [DEBUG] 16. Sample data contains 384 rows and 8 columns 
+# [DEBUG] 17. Sample data columns: ID, pos96, num384, pos384, sampletype, Col_order_by_plate, Row_order_by_plate, Sample_ID 
+# [DEBUG] 18. Working directory: \\nasn2acts.cc.emory.edu/rsphprojects-ts/diwalke/LC/Run_Lists/Sequence_Generator_July25/App 
+# [DEBUG] 19. Found file: write_list.R - Size: 60098 bytes 
+# [DEBUG] 20. All required script files exist 
+# [DEBUG] 21. Output filename: CLU_05_250804_C18.csv 
+# [DEBUG] 22. Original full output path: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files/CLU_05_250804_C18.csv 
+# [DEBUG] 22a. Unique output path: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files/CLU_05_250804_C18.csv 
+# [DEBUG] 23. Double-check output directory: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files 
+# [DEBUG] WARNING: Output directory doesn't exist: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files 
+# Warning in dir.create(output_dir, recursive = TRUE) :
+#   cannot create dir 'R:\diwalke', reason 'No such file or directory'
+# Warning in file(file, ifelse(append, "a", "w")) :
+#   cannot open file 'R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files/.write_test': No such file or directory
+# Error in file(file, ifelse(append, "a", "w")) : 
+#   cannot open the connection
+# [DEBUG] ERROR: Cannot write to output directory: Error in file(file, ifelse(append, "a", "w")) : 
+#   cannot open the connection
+
+###could be due to the network drive permission error (cannot save to R: from RStudio anymore)
+
 
 ############### NOTES ABOUT SAMPLE LOGIC BY TYPE
 
@@ -1470,6 +1512,8 @@ server <- function(input, output, session) {
       tryCatch({
         debug_log("27. Preparing to call write_sequence()...")
         
+        final_data <- id_container() #added 8/4
+        
         # Create list of inputs to pass
         params <- list(
           date = date_value,
@@ -1520,15 +1564,13 @@ server <- function(input, output, session) {
         )
       } else {
         debug_log(paste("ERROR: Output file was not created at", sequence_filepath))
-        }
-        
-      # Complete progress
-      debug_log("34. Updating progress indicator to complete")
-      incProgress(1, detail = "Complete!")
+      }
       
-      }) # end withProgress chunk
+      incProgress(1, detail = "Complete")
+      
+      }) # end of withProgress indicator
     
-     debug_log("35. Sequence generation process complete")
+     debug_log("34. End of server.R")
      
   }) #################### END 'WRITE LIST' OBSERVER ############################################################################################
 
