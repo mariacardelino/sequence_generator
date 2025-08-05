@@ -43,23 +43,22 @@
 
 ### Passing arguments directly with function -- 7/31 change
 write_sequence <- function(params) {
-  # params <- list(
-  # date = date_value,
-  # study = study_value,
-  # batch = batch_value,
-  # rack = rack_value,
-  # tech = tech_value,
-  # machine = machine_value,
-  # pos = position_value,
-  # firstlast = firstlast_value,
-  # final_data = final_data,
-  # sequence_filename = filename_value,
-  # sequence_filepath = sequence_filepath,
-  # project_path = project_path,
-  # method_folder = method_folder,
-  # output_path = output_path,
-  # ordering_preference = order_pattern()
-  # )
+  #8/4 added definitions - this was cause of previous error
+  date <- params$date 
+  study <- params$study 
+  batch <- params$batch 
+  rack <- params$rack 
+  tech <- params$tech 
+  machine <- params$machine 
+  pos <- params$pos 
+  firstlast <- params$firstlast 
+  final_data <- params$final_data 
+  sequence_filename <- params$sequence_filename 
+  sequence_filepath <- params$sequence_filepath 
+  project_path <- params$project_path 
+  method_folder <- params$method_folder 
+  output_path <- params$output_path 
+  ordering_preference <- params$ordering_preference
 
   # TRIM WHITE SPACE 
   final_data$Sample_ID <- trimws(final_data$Sample_ID, which = "left")

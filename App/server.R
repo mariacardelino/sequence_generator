@@ -4,45 +4,30 @@
 ##########################################################################################################
 
 ## TO-DO ####
-#ERROR in write_sequence(): object 'final_data' not found
-
-## ERROR in write_sequence(): object 'final_data' not found
+#8/5 error on main lab computer:
+# 6 ----- GENERATING SEQUENCE LIST ----- 
+#   Error occurred. No study racks found in grouping process.[1] "Some samples were not identified. rows of dataframe = 197 and sample types added together =  17"
+# Found 20 poolsWarning in write_sequence(params) :
+#   Expected 12 pools but found 20 - runorder not assigned
+# Printing positions for MSMS locations (verify all are study samples):
+#   Position: C3 | Sample Type: Study_Sample 
+# Position: E17 | Sample Type: Study_Sample 
+# Position: G19 | Sample Type: Study_Sample 
+# Position: C10 | Sample Type: Study_Sample 
+# Position: E4 | Sample Type: Study_Sample 
+# Position: M12 | Sample Type: Study_Sample 
+# Position: E11 | Sample Type: Study_Sample 
+# Position: G17 | Sample Type: Study_Sample 
+# Position: C16 | Sample Type: Study_Sample 
+# Position: I14 | Sample Type: Study_Sample 
+# Position: M8 | Sample Type: Study_Sample 
+# Position: O20 | Sample Type: Study_Sample 
+# [DEBUG] ERROR in write_sequence(): replacement has 1 row, data has 0 
+# [DEBUG] ERROR: Output file was not created at R:\diwalke\LC\Run_Lists\Sequence_Generator_July25\Trash/CLUTEST_07_250805_C18.csv 
+# [DEBUG]  ----- End of server.R -----  
 
 #8/4/25 when run on Ralph computer:
-# [DEBUG] 1. Generate sequence list button clicked 
-# [DEBUG] 2. Values exist: TRUE 
-# [DEBUG] 3. Checking required inputs... 
-# [DEBUG] 4. Date: 250804 
-# [DEBUG] 5. Study: CLU_TEST 
-# [DEBUG] 6. Batch: 05 
-# [DEBUG] 6a. Racks: 7,8 
-# [DEBUG] 7. Tech: MC 
-# [DEBUG] 8. Machine: C18 
-# [DEBUG] 9. Position: R 
-# [DEBUG] First/Last: FALSE 
-# [DEBUG] 12. All required run info values exist 
-# [DEBUG] Successfully accessed all run info values 
-# [DEBUG] 13. Updating QAQCS.xlsx with study info... 
-# [DEBUG] Successfully updated QAQCS.xlsx 
-# [DEBUG] Successfully updated Samples.xlsx 
-# [DEBUG] 14. Checking sample data... 
-# [DEBUG] 15. Successfully retrieved data from id_container() 
-# [DEBUG] 16. Sample data contains 384 rows and 8 columns 
-# [DEBUG] 17. Sample data columns: ID, pos96, num384, pos384, sampletype, Col_order_by_plate, Row_order_by_plate, Sample_ID 
-# [DEBUG] 18. Working directory: \\nasn2acts.cc.emory.edu/rsphprojects-ts/diwalke/LC/Run_Lists/Sequence_Generator_July25/App 
-# [DEBUG] 19. Found file: write_list.R - Size: 60098 bytes 
-# [DEBUG] 20. All required script files exist 
-# [DEBUG] 21. Output filename: CLU_05_250804_C18.csv 
-# [DEBUG] 22. Original full output path: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files/CLU_05_250804_C18.csv 
-# [DEBUG] 22a. Unique output path: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files/CLU_05_250804_C18.csv 
-# [DEBUG] 23. Double-check output directory: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files 
-# [DEBUG] WARNING: Output directory doesn't exist: R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files 
-# Warning in dir.create(output_dir, recursive = TRUE) :
-#   cannot create dir 'R:\diwalke', reason 'No such file or directory'
-# Warning in file(file, ifelse(append, "a", "w")) :
-#   cannot open file 'R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-RALPH/CLU_TEST_250804_C18/3-Sequence_Files/.write_test': No such file or directory
-# Error in file(file, ifelse(append, "a", "w")) : 
-#   cannot open the connection
+
 # [DEBUG] ERROR: Cannot write to output directory: Error in file(file, ifelse(append, "a", "w")) : 
 #   cannot open the connection
 
@@ -1257,26 +1242,26 @@ server <- function(input, output, session) {
   # Observer for generating sequence list ######################################################################################################################
   observeEvent(input$write_list, {
     
-    debug_log("1. Generate sequence list button clicked")
+    debug_log("Debug log for generating sequence list...")
+    
+    debug_log("1 ----- INPUT CHECK -----")
     
     # Check the reactiveValues structure itself
-    debug_log(paste("2. Values exist:", !is.null(values)))
+    debug_log(paste("Values exist:", !is.null(values)))
     
-    # Safer checking of required inputs - one at a time
-    debug_log("3. Checking required inputs...")
     if (is.null(values$run_info)) {
       debug_log("ERROR: values$run_info is NULL")
       showNotification("Missing run information", type = "error")
       return()
     }
     
-    debug_log(paste("4. Date:", ifelse(is.null(values$run_info$date), "NULL", values$run_info$date)))
-    debug_log(paste("5. Study:", ifelse(is.null(values$run_info$study), "NULL", values$run_info$study)))
-    debug_log(paste("6. Batch:", ifelse(is.null(values$run_info$batch), "NULL", values$run_info$batch)))
-    debug_log(paste("6a. Racks:", ifelse(is.null(values$run_info$rack), "NULL", values$run_info$rack)))
-    debug_log(paste("7. Tech:", ifelse(is.null(values$run_info$tech), "NULL", values$run_info$tech)))
-    debug_log(paste("8. Machine:", ifelse(is.null(values$run_info$machine), "NULL", values$run_info$machine)))
-    debug_log(paste("9. Position:", ifelse(is.null(values$run_info$position), "NULL", values$run_info$position)))
+    debug_log(paste("Date:", ifelse(is.null(values$run_info$date), "NULL", values$run_info$date)))
+    debug_log(paste("Study:", ifelse(is.null(values$run_info$study), "NULL", values$run_info$study)))
+    debug_log(paste("Batch:", ifelse(is.null(values$run_info$batch), "NULL", values$run_info$batch)))
+    debug_log(paste("Racks:", ifelse(is.null(values$run_info$rack), "NULL", values$run_info$rack)))
+    debug_log(paste("Tech:", ifelse(is.null(values$run_info$tech), "NULL", values$run_info$tech)))
+    debug_log(paste("Machine:", ifelse(is.null(values$run_info$machine), "NULL", values$run_info$machine)))
+    debug_log(paste("Position:", ifelse(is.null(values$run_info$position), "NULL", values$run_info$position)))
     debug_log(paste("First/Last:", ifelse(is.null(values$run_info$firstlast), "NULL", values$run_info$firstlast)))
     
     # Check if any required values are missing
@@ -1300,7 +1285,7 @@ server <- function(input, output, session) {
       return()
     }
     
-    debug_log("12. All required run info values exist")
+    debug_log("All required run info values exist")
     
     # Access the run info values 
     date_value <- values$run_info$date
@@ -1323,13 +1308,13 @@ server <- function(input, output, session) {
     
     debug_log("Successfully accessed all run info values")
     
-    debug_log("13. Updating QAQCS.xlsx with study info...")
+    debug_log("2 ----- UPDATING INVENTORY -----.")
     
     current_ids <- id_container()$ID # works
     
     # Update QAQCS ####
     ## FIXED 7/29 
-    ## before - did not work if user did not update sheet earlier (info reactive Value)
+
     tryCatch({
       wb <- openxlsx::loadWorkbook(q_path)
     }, error = function(e) {
@@ -1370,7 +1355,7 @@ server <- function(input, output, session) {
     #######################################################################
     
     # Check id_container()
-    debug_log("14. Checking sample data...")
+    debug_log("3 ----- SAMPLE DATA CHECK ----- ")
     if (!exists("id_container")) {
       debug_log("ERROR: id_container function does not exist")
       showNotification("Internal error: id_container is missing", type = "error")
@@ -1380,7 +1365,7 @@ server <- function(input, output, session) {
     # Get the sample data cautiously
     tryCatch({
       final_data <- id_container()
-      debug_log("15. Successfully retrieved data from id_container()")
+      debug_log("Successfully retrieved sample data")
       
       if(is.null(final_data)) {
         debug_log("ERROR: id_container() returned NULL")
@@ -1400,8 +1385,8 @@ server <- function(input, output, session) {
         return()
       }
       
-      debug_log(paste("16. Sample data contains", nrow(final_data), "rows and", ncol(final_data), "columns"))
-      debug_log(paste("17. Sample data columns:", paste(names(final_data), collapse=", ")))
+      debug_log(paste("Sample data contains", nrow(final_data), "rows and", ncol(final_data), "columns"))
+      debug_log(paste("Sample data columns:", paste(names(final_data), collapse=", ")))
       
     }, error = function(e) {
       debug_log(paste("ERROR in id_container():", e$message))
@@ -1412,7 +1397,8 @@ server <- function(input, output, session) {
     # Verify the working directory
     tryCatch({
       app_wd <- getwd()
-      debug_log(paste("18. Working directory:", app_wd))
+      debug_log("4 ----- R FILE CHECK ----- ")
+      debug_log(paste("Working directory:", app_wd))
       
       # Check for required script files with more detail
       script_file <- "write_list.R"
@@ -1426,7 +1412,7 @@ server <- function(input, output, session) {
         debug_log(paste("WARNING: Required file not found:", file_path))
       } else {
         file_size <- file.info(file_path)$size
-        debug_log(paste("19. Found file:", script_file, "- Size:", file_size, "bytes"))
+        debug_log("Required script files exist")
       }
       
       if(length(missing_files) > 0) {
@@ -1436,43 +1422,42 @@ server <- function(input, output, session) {
         return()
       }
       
-      debug_log("20. All required script files exist")
-      
     }, error = function(e) {
       debug_log(paste("ERROR checking working directory:", e$message))
       showNotification(paste("Error checking files:", e$message), type = "error")
       return()
     })
     
+    
+    debug_log(paste("5 ----- OUTPUT CHECK -----"))
+
+    # Set output file path ##########################################################################
+    directory <- output_path # From Shiny input
+    debug_log(paste("Output folderpath:", directory)) 
+    
     # Ensure filename has .csv extension
     if(!grepl("\\.csv$", filename_value)) {
       filename_value <- paste0(filename_value, ".csv")
     }
-    
-    debug_log(paste("21. Output filename:", filename_value))
-    
-    # Set output file path ##########################################################################
-    # old - hardcode destination
-    directory <- output_path 
       
+    # Default folder/sequence filename
     sequence_filepath <- file.path(directory, filename_value)
-    debug_log(paste("22. Original full output path:", sequence_filepath)) 
-      
-    # Check if file exists and get unique filename
+    
+    # Check if file exists, and if so, update sequence_filepath to unique name
     sequence_filepath <- get_unique_filename(sequence_filepath) 
     
-    # Update filename_value to match the new path (for display purposes)
+    # Update filename_value to match the new path
     filename_value <- basename(sequence_filepath)
-    debug_log(paste("22a. Unique output path:", sequence_filepath))
+    
+    debug_log(paste("Unique filename for sequence:", sequence_filepath))
     
     # Test file writing with more detail
     tryCatch({
       # Check file write permissions
       output_dir <- dirname(sequence_filepath)
-      debug_log(paste("23. Double-check output directory:", output_dir))
       
       if(!dir.exists(output_dir)) {
-        debug_log(paste("WARNING: Output directory doesn't exist:", output_dir))
+        debug_log(paste("WARNING: Output directory doesn't yet exist and will be created.", output_dir))
         create_result <- try(dir.create(output_dir, recursive = TRUE))
         if(inherits(create_result, "try-error")) {
           debug_log(paste("ERROR: Failed to create output directory:", geterrmessage()))
@@ -1490,7 +1475,7 @@ server <- function(input, output, session) {
         return()
       } else {
         file.remove(test_file)
-        debug_log("24. Successfully tested write permissions")
+        debug_log("Successfully tested write permissions")
       }
       
     }, error = function(e) {
@@ -1500,17 +1485,13 @@ server <- function(input, output, session) {
     })
     
     # Create a progress indicator with more early updates
-    debug_log("25. Starting progress indicator")
+    debug_log("6 ----- GENERATING SEQUENCE LIST -----")
     
     withProgress(message = 'Generating sequence list', value = 0, {
       # Update progress immediately to show something is happening
       incProgress(0.1, detail = "Initializing...")
       
-      # Use a simplified direct approach first to identify issues
-      debug_log("26. Starting main sequence generation in try-catch block")
-      
       tryCatch({
-        debug_log("27. Preparing to call write_sequence()...")
         
         final_data <- id_container() #added 8/4
         
@@ -1536,7 +1517,7 @@ server <- function(input, output, session) {
         # Call the function from write_list.R
         write_sequence(params)
         
-        debug_log("30. Successfully executed write_sequence()")
+        debug_log("Successfully executed write_sequence()")
         
       }, error = function(e) {
         debug_log(paste("ERROR in write_sequence():", e$message))
@@ -1547,8 +1528,8 @@ server <- function(input, output, session) {
       incProgress(0.9, detail = "Verifying output...")
         
       if(file.exists(sequence_filepath)) {
-        debug_log(paste("31. SUCCESS: File created at", sequence_filepath))
-        debug_log(paste("32. File size:", file.info(sequence_filepath)$size, "bytes"))
+        debug_log(paste("SUCCESS: File created at", sequence_filepath))
+        debug_log(paste("File size:", file.info(sequence_filepath)$size, "bytes"))
           
         # Store the path for UI updates
         values$generated_file_path <- sequence_filepath
@@ -1570,38 +1551,8 @@ server <- function(input, output, session) {
       
       }) # end of withProgress indicator
     
-     debug_log("34. End of server.R")
+     debug_log(" ----- End of server.R ----- ")
      
   }) #################### END 'WRITE LIST' OBSERVER ############################################################################################
-
-  # # UI for sequence status - fixed 7/17 edited 7/31 removed 7/31
-  # output$sequence_status <- renderUI({
-  #   
-  #   output_path <- values$final_paths$output_path
-  #   
-  #   # Only proceed if a folder has been selected and it's a valid character string
-  #   if (!is.null(output_path) &&
-  #       is.character(output_path) &&
-  #       nzchar(output_path) &&
-  #       dir.exists(output_path) &&
-  #       file.exists(sequence_filepath)) { # added 7/31
-  #     # object 'sequence_filepath' not found
-  #     
-  #     div(
-  #       style = "margin-top: 10px; padding: 10px; background-color: #e8f8e8; border: 1px solid #d0e0d0; border-radius: 5px;",
-  #       h4("Sequence List Generated!", style = "margin-top: 0; color: #2c3e50;"),
-  #       p(paste("Folder selected:", basename(output_path))),
-  #       div(
-  #         style = "display: flex; gap: 10px;",
-  #         actionButton("view_sequence", "View Folder", icon = icon("eye"), 
-  #                      style = "color: white; background-color: #3498db;")
-  #       )
-  #     )
-  #     
-  #   } else {
-  #     # Return nothing until the folder is selected
-  #     NULL
-  #   }
-  # }) # end sequence_status observer
   
 } # END SERVER 
