@@ -6,6 +6,10 @@
 ## TO-DO ####
 #8/5 error on main lab computer:
 # 6 ----- GENERATING SEQUENCE LIST ----- 
+
+#8/7 how to address:
+
+
 #   Error occurred. No study racks found in grouping process.[1] "Some samples were not identified. rows of dataframe = 197 and sample types added together =  17"
 # Found 20 poolsWarning in write_sequence(params) :
 #   Expected 12 pools but found 20 - runorder not assigned
