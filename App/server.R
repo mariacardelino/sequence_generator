@@ -7,25 +7,13 @@
 #8/5 error on main lab computer:
 # 6 ----- GENERATING SEQUENCE LIST ----- 
 
-#8/7 how to address:
+#8/8 how to address: the pool count thing was a cosmetic error, not real error.
 
 
 #   Error occurred. No study racks found in grouping process.[1] "Some samples were not identified. rows of dataframe = 197 and sample types added together =  17"
 # Found 20 poolsWarning in write_sequence(params) :
 #   Expected 12 pools but found 20 - runorder not assigned
-# Printing positions for MSMS locations (verify all are study samples):
-#   Position: C3 | Sample Type: Study_Sample 
-# Position: E17 | Sample Type: Study_Sample 
-# Position: G19 | Sample Type: Study_Sample 
-# Position: C10 | Sample Type: Study_Sample 
-# Position: E4 | Sample Type: Study_Sample 
-# Position: M12 | Sample Type: Study_Sample 
-# Position: E11 | Sample Type: Study_Sample 
-# Position: G17 | Sample Type: Study_Sample 
-# Position: C16 | Sample Type: Study_Sample 
-# Position: I14 | Sample Type: Study_Sample 
-# Position: M8 | Sample Type: Study_Sample 
-# Position: O20 | Sample Type: Study_Sample 
+
 # [DEBUG] ERROR in write_sequence(): replacement has 1 row, data has 0 
 # [DEBUG] ERROR: Output file was not created at R:\diwalke\LC\Run_Lists\Sequence_Generator_July25\Trash/CLUTEST_07_250805_C18.csv 
 # [DEBUG]  ----- End of server.R -----  

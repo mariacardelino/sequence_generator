@@ -59,7 +59,7 @@ write_sequence <- function(params) {
   method_folder <- params$method_folder 
   output_path <- params$output_path 
   ordering_preference <- params$ordering_preference
-
+  
   # TRIM WHITE SPACE 
   final_data$Sample_ID <- trimws(final_data$Sample_ID, which = "left")
   
@@ -625,24 +625,33 @@ write_sequence <- function(params) {
   # pools1 <- pools[grepl("^HRE\\.p1", pools$Sample_ID), ] # used to be 10, now 6
   # pools2 <- pools[grepl("^HRE\\.p2", pools$Sample_ID), ] # used to be 10, now 6
   
-  # Check for 20 pools
-  if (pool_count == 20) {
-    pools1$runorder <- sprintf("%02d", 1:10)
-    pools2$runorder <- sprintf("%02d", 1:10)
-    cat("Found 20 pools")
-    #} else {
-    #warning(paste("Expected 20 pools but found", pool_count, "- runorder not assigned"))
-  }
+  
+  ## 8/8: add pool_count variable to the write_list function later
+  
+  # Create the full run order vector
+  run_order <- sprintf("%02d", 1:pool_count) #1:total number of pools (e.g. 12)
+  
+  # Split the run order into two halves
+  half <- pool_count / 2
+  pools1$runorder <- run_order[1:half] # 1:half (e.g. 1:6)
+  pools2$runorder <- run_order[1:half]
   
   # New - check for 12 pools
   if (pool_count == 12) {
-    pools1$runorder <- sprintf("%02d", 1:6)
-    pools2$runorder <- sprintf("%02d", 1:6)
     cat("Found 12 pools")
   } else {
     warning(paste("Expected 12 pools but found", pool_count, "- runorder not assigned"))
   }
   
+  # # Check for 20 pools
+  # if (pool_count == 20) {
+  #   pools1$runorder <- sprintf("%02d", 1:10)
+  #   pools2$runorder <- sprintf("%02d", 1:10)
+  #   cat("Found 20 pools")
+  #   #} else {
+  #   #warning(paste("Expected 20 pools but found", pool_count, "- runorder not assigned"))
+  # }
+  # 
   ############ POOL 1 ################################
   
   # Vector for storing lines
@@ -790,7 +799,7 @@ write_sequence <- function(params) {
   pfas_cc_lines_pos <- vector("character", nrow(cal_curves)) #cal_curve_lines_pos is chr [1:8]
   pfas_cc_lines_neg <- vector("character", nrow(cal_curves))
   
-  for (i in 1:nrow(pfas_ccs)) { # should be 8!
+  for (i in 1:nrow(pfas_ccs)) { ### EDIT THIS ------------------------------------
     # Needed information from data
     sample_id <- pfas_ccs$Sample_ID[i]
     pos384 <- pfas_ccs$pos384[i]
@@ -888,41 +897,64 @@ write_sequence <- function(params) {
   study_sample_lines_neg <- vector("character", nrow(study_samples))
   
   for (i in 1:nrow(study_samples)) {
-    
     # Needed information from data
     sample_id <- study_samples$Sample_ID[i]
     pos384 <- study_samples$pos384[i]
     
     # For each well, create a positive and negative row
     pos_line <- paste(
-      sample_type,          # Field 1: Sample Type
-      filename_pos,             # Field 2: File Name NEEDS ORDER NUMBER when printing.
-      paste0(sample_id, "_1"),          # Field 3: Sample_ID_ID
-      comment,              # Field 4: Comment
-      l2,                   # Field 5: L2 Client
-      path,                 # Field 6: Path
-      reg_pos,           # Field 7: Instrument Method
-      paste0(position, pos384), # Field 8: Position  
-      pos_vol,                    # Field 9: Inj Vol
-      l1,            # Field 10: L1 Study
-      l3,                     # Field 11: L3 Laboratory
-      "Study_Sample",                # Field 12: Sample Name
+      sample_type,
+      # Field 1: Sample Type
+      filename_pos,
+      # Field 2: File Name NEEDS ORDER NUMBER when printing.
+      paste0(sample_id, "_1"),
+      # Field 3: Sample_ID_ID
+      comment,
+      # Field 4: Comment
+      l2,
+      # Field 5: L2 Client
+      path,
+      # Field 6: Path
+      reg_pos,
+      # Field 7: Instrument Method
+      paste0(position, pos384),
+      # Field 8: Position
+      pos_vol,
+      # Field 9: Inj Vol
+      l1,
+      # Field 10: L1 Study
+      l3,
+      # Field 11: L3 Laboratory
+      "Study_Sample",
+      # Field 12: Sample Name
       sep = ","
     )
     
     neg_line <- paste(
-      sample_type,          # Field 1: Sample Type
-      filename_neg,             # Field 2: File Name NEEDS ORDER NUMBER when printing.
-      paste0(sample_id, "_2"),          # Field 3: Sample_ID_ID
-      comment,              # Field 4: Comment
-      l2,                   # Field 5: L2 Client
-      path,                 # Field 6: Path
-      reg_neg,           # Field 7: Instrument Method
-      paste0(position, pos384), # Field 8: Position  
-      neg_vol,                    # Field 9: Inj Vol
-      l1,            # Field 10: L1 Study
-      l3,                     # Field 11: L3 Laboratory
-      "Study_Sample",                # Field 12: Sample Name
+      sample_type,
+      # Field 1: Sample Type
+      filename_neg,
+      # Field 2: File Name NEEDS ORDER NUMBER when printing.
+      paste0(sample_id, "_2"),
+      # Field 3: Sample_ID_ID
+      comment,
+      # Field 4: Comment
+      l2,
+      # Field 5: L2 Client
+      path,
+      # Field 6: Path
+      reg_neg,
+      # Field 7: Instrument Method
+      paste0(position, pos384),
+      # Field 8: Position
+      neg_vol,
+      # Field 9: Inj Vol
+      l1,
+      # Field 10: L1 Study
+      l3,
+      # Field 11: L3 Laboratory
+      "Study_Sample",
+      # Field 12: Sample Name
       sep = ","
     )
     study_sample_lines_pos[i] <- pos_line
@@ -939,7 +971,8 @@ write_sequence <- function(params) {
   
   # CHOOSE POSITIONS MANUALLY - MUST BE SAMPLE POSITIONS #################################################
   pfas_ms2_positions <- c("C3", "E17", "G19", "C10", "E4", "M12")
-  nonpfas_ms2_positions <- c("E11", "G17", "C16", "I14", "M8", "O20")
+  nonpfas_ms2_positions <-
+    c("E11", "G17", "C16", "I14", "M8", "O20")
   
   # ^^^^ Maybe in the app some day you can select which samples/positions you want to run these on -------------------------------------------
   # Or have the option to choose random?
@@ -957,7 +990,11 @@ write_sequence <- function(params) {
     # Check if the position exists in the data
     if (length(row_index) > 0) {
       # Print the position and its corresponding sampletype
-      cat("Position:", pos, "| Sample Type:", final_data$sampletype[row_index], "\n")
+      cat("Position:",
+          pos,
+          "| Sample Type:",
+          final_data$sampletype[row_index],
+          "\n")
     } else {
       cat("Position:", pos, "| Not found in data\n")
     }
@@ -987,34 +1024,58 @@ write_sequence <- function(params) {
     
     # For each well, create a positive and negative row
     pos_line <- paste(
-      sample_type,          # Field 1: Sample Type
-      filename_pos,             # Field 2: File Name NEEDS ORDER NUMBER AND PFAS-MSMS AT END
-      paste0(sample_id, "_1_PFAS-MSMS"),          # Field 3: Sample_ID_ID
-      comment,              # Field 4: Comment
-      l2,                   # Field 5: L2 Client
-      ms2path,                 # Field 6: Path
-      ms2_pfas_pos,           # Field 7: Instrument Method
-      paste0(position, pos384), # Field 8: Position  
-      pos_vol,                    # Field 9: Inj Vol
-      l1,            # Field 10: L1 Study
-      l3,                     # Field 11: L3 Laboratory
-      "PFAS-MSMS",                # Field 12: Sample Name
+      sample_type,
+      # Field 1: Sample Type
+      filename_pos,
+      # Field 2: File Name NEEDS ORDER NUMBER AND PFAS-MSMS AT END
+      paste0(sample_id, "_1_PFAS-MSMS"),
+      # Field 3: Sample_ID_ID
+      comment,
+      # Field 4: Comment
+      l2,
+      # Field 5: L2 Client
+      ms2path,
+      # Field 6: Path
+      ms2_pfas_pos,
+      # Field 7: Instrument Method
+      paste0(position, pos384),
+      # Field 8: Position
+      pos_vol,
+      # Field 9: Inj Vol
+      l1,
+      # Field 10: L1 Study
+      l3,
+      # Field 11: L3 Laboratory
+      "PFAS-MSMS",
+      # Field 12: Sample Name
       sep = ","
     )
     
     neg_line <- paste(
-      sample_type,          # Field 1: Sample Type
-      filename_neg,             # Field 2: File Name NEEDS ORDER NUMBER AND PFAS-MSMS AT END
-      paste0(sample_id, "_2_PFAS-MSMS"),        # Field 3: Sample_ID_ID
-      comment,              # Field 4: Comment
-      l2,                   # Field 5: L2 Client
-      ms2path,                 # Field 6: Path
-      ms2_pfas_neg,           # Field 7: Instrument Method
-      paste0(position, pos384), # Field 8: Position  
-      neg_vol,                    # Field 9: Inj Vol
-      l1,            # Field 10: L1 Study
-      l3,                     # Field 11: L3 Laboratory
-      "PFAS-MSMS",                # Field 12: Sample Name
+      sample_type,
+      # Field 1: Sample Type
+      filename_neg,
+      # Field 2: File Name NEEDS ORDER NUMBER AND PFAS-MSMS AT END
+      paste0(sample_id, "_2_PFAS-MSMS"),
+      # Field 3: Sample_ID_ID
+      comment,
+      # Field 4: Comment
+      l2,
+      # Field 5: L2 Client
+      ms2path,
+      # Field 6: Path
+      ms2_pfas_neg,
+      # Field 7: Instrument Method
+      paste0(position, pos384),
+      # Field 8: Position
+      neg_vol,
+      # Field 9: Inj Vol
+      l1,
+      # Field 10: L1 Study
+      l3,
+      # Field 11: L3 Laboratory
+      "PFAS-MSMS",
+      # Field 12: Sample Name
       sep = ","
     )
     pfas_msms_lines_pos[i] <- pos_line
@@ -1034,34 +1095,58 @@ write_sequence <- function(params) {
     
     # For each well, create a positive and negative row
     pos_line <- paste(
-      sample_type,          # Field 1: Sample Type
-      filename_pos,             # Field 2: File Name NEEDS ORDER NUMBER AND _MSMS AT END
-      paste0(sample_id, "_1_MSMS"),          # Field 3: Sample_ID_ID
-      comment,              # Field 4: Comment
-      l2,                   # Field 5: L2 Client
-      ms2path,                 # Field 6: Path
-      ms2_nonpfas_pos,           # Field 7: Instrument Method
-      paste0(position, pos384), # Field 8: Position  
-      pos_vol,                    # Field 9: Inj Vol
-      l1,            # Field 10: L1 Study
-      l3,                     # Field 11: L3 Laboratory
-      "MSMS",                # Field 12: Sample Name
+      sample_type,
+      # Field 1: Sample Type
+      filename_pos,
+      # Field 2: File Name NEEDS ORDER NUMBER AND _MSMS AT END
+      paste0(sample_id, "_1_MSMS"),
+      # Field 3: Sample_ID_ID
+      comment,
+      # Field 4: Comment
+      l2,
+      # Field 5: L2 Client
+      ms2path,
+      # Field 6: Path
+      ms2_nonpfas_pos,
+      # Field 7: Instrument Method
+      paste0(position, pos384),
+      # Field 8: Position
+      pos_vol,
+      # Field 9: Inj Vol
+      l1,
+      # Field 10: L1 Study
+      l3,
+      # Field 11: L3 Laboratory
+      "MSMS",
+      # Field 12: Sample Name
       sep = ","
     )
     
     neg_line <- paste(
-      sample_type,          # Field 1: Sample Type
-      filename_neg,             # Field 2: File Name NEEDS ORDER NUMBER AND _MSMS AT END
-      paste0(sample_id, "_2_MSMS"),        # Field 3: Sample_ID_ID
-      comment,              # Field 4: Comment
-      l2,                   # Field 5: L2 Client
-      ms2path,                 # Field 6: Path
-      ms2_nonpfas_neg,           # Field 7: Instrument Method
-      paste0(position, pos384), # Field 8: Position  
-      neg_vol,                    # Field 9: Inj Vol
-      l1,            # Field 10: L1 Study
-      l3,                     # Field 11: L3 Laboratory
-      "MSMS",                # Field 12: Sample Name
+      sample_type,
+      # Field 1: Sample Type
+      filename_neg,
+      # Field 2: File Name NEEDS ORDER NUMBER AND _MSMS AT END
+      paste0(sample_id, "_2_MSMS"),
+      # Field 3: Sample_ID_ID
+      comment,
+      # Field 4: Comment
+      l2,
+      # Field 5: L2 Client
+      ms2path,
+      # Field 6: Path
+      ms2_nonpfas_neg,
+      # Field 7: Instrument Method
+      paste0(position, pos384),
+      # Field 8: Position
+      neg_vol,
+      # Field 9: Inj Vol
+      l1,
+      # Field 10: L1 Study
+      l3,
+      # Field 11: L3 Laboratory
+      "MSMS",
+      # Field 12: Sample Name
       sep = ","
     )
     nonpfas_msms_lines_pos[i] <- pos_line
@@ -1069,7 +1154,7 @@ write_sequence <- function(params) {
   }
   
   ###################################################################################################################################
-  # Functions to help modifying as we write lines 
+  # Functions to help modifying as we write lines
   ###################################################################################################################################
   
   # MODIFY Function:
@@ -1122,7 +1207,7 @@ write_sequence <- function(params) {
   # 1 water (out of 2)
   # 1 NIST (OPTIONAL, out of 1)
   
-  # Pool 1 
+  # Pool 1
   # Pool 2
   # 3 PFAS (0.1, 0.5, 1)
   # 40 study samples
@@ -1133,9 +1218,9 @@ write_sequence <- function(params) {
   # Pool 2
   # 3 PFAS (0.1, 0.5, 1)
   
-  # 1 'blank' 
+  # 1 'blank'
   # CAL CURVE (1-8/8)
-  # 1 'blank' 
+  # 1 'blank'
   
   # Pool 1
   # Pool 2
@@ -1168,7 +1253,10 @@ write_sequence <- function(params) {
   # Headers
   # Write the two-row header format to the file
   writeLines("Bracket Type=4,,,,,,,,,,,", file_conn)
-  writeLines("Sample Type,File Name,Sample ID,Comment,L2 Client,Path,Instrument Method,Position,Inj Vol,L1 Study,L3 Laboratory,Sample Name", file_conn)
+  writeLines(
+    "Sample Type,File Name,Sample ID,Comment,L2 Client,Path,Instrument Method,Position,Inj Vol,L1 Study,L3 Laboratory,Sample Name",
+    file_conn
+  )
   
   # 1 instrument blank - actual blank
   writeLines(modify(blank_lines_pos[1], run_order), file_conn)
@@ -1193,20 +1281,25 @@ write_sequence <- function(params) {
   ####### POOL ##########################################
   # separated by pool number 5/29
   
-  writeLines(modify(pool1_lines_pos[1], run_order), file_conn) # Pool 1
-  writeLines(modify(pool1_lines_neg[1], run_order), file_conn)
+  each_final_pool_count <-
+    nrow(pool1_lines_pos) #do something with this later?
+  pool_tally <- 1
+  
+  writeLines(modify(pool1_lines_pos[pool_tally], run_order), file_conn) # Pool 1
+  writeLines(modify(pool1_lines_neg[pool_tally], run_order), file_conn)
   run_order <- run_order + 1
   
-  writeLines(modify(pool2_lines_pos[1], run_order), file_conn) # Pool 2
-  writeLines(modify(pool2_lines_neg[1], run_order), file_conn)
+  writeLines(modify(pool2_lines_pos[pool_tally], run_order), file_conn) # Pool 2
+  writeLines(modify(pool2_lines_neg[pool_tally], run_order), file_conn)
   run_order <- run_order + 1
+  pool_tally <- pool_tally + 1
   
   ## 7/28?? ADD 3 PFAS CURVE HERE (1 of 3)
   
   ### Note: MSMS LOGIC ###############################
   # When writing study samples, if
   
-  # study_samples$pfms == TRUE 
+  # study_samples$pfms == TRUE
   # then there is a PFAS MSMS run after that sample
   # study_samples$nonpfms == TRUE
   # then there is a nonPFAS MSMS run after that sample.
@@ -1221,10 +1314,11 @@ write_sequence <- function(params) {
   
   batch_size <- first_half_size #40 expected
   
-  # If first half is split, batch_size is 80/2 = 40 
+  # If first half is split, batch_size is 80/2 = 40
   # If first half is <60, batch_size is that number. Ex: 50
   
-  for (i in 1:batch_size) { #This is correct ################################################################
+  for (i in 1:batch_size) {
+    #This is correct ################################################################
     # If only one chunk, batch size is the full first batch
     # If two chunks, batch size is half the full first batch
     writeLines(modify(study_sample_lines_pos[i], run_order), file_conn)
@@ -1232,74 +1326,86 @@ write_sequence <- function(params) {
     
     # If this sample is flagged for PFAS MSMS, add those lines
     if (study_samples$pfms[i] == TRUE) {
-      
       # Find which position in the pfas_ms2_positions list this sample corresponds to
-      pos_index <- which(pfas_ms2_positions == study_samples$pos384[i])
+      pos_index <-
+        which(pfas_ms2_positions == study_samples$pos384[i])
       
-      writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"), file_conn)
-      writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"), file_conn)
+      writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"),
+                 file_conn)
+      writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"),
+                 file_conn)
     }
     
-    # Same for non-PFAS MSMS 
+    # Same for non-PFAS MSMS
     if (study_samples$nonpfms[i] == TRUE) {
-      
       # Find which position in the pfas_ms2_positions list this sample corresponds to
-      pos_index <- which(nonpfas_ms2_positions == study_samples$pos384[i])
+      pos_index <-
+        which(nonpfas_ms2_positions == study_samples$pos384[i])
       
-      writeLines(modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
-      writeLines(modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
+      writeLines(modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"),
+                 file_conn)
+      writeLines(modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"),
+                 file_conn)
     }
-    #Increment 
+    #Increment
     run_order <- run_order + 1
   }
   ################################################################################## End study sample chunk 1 of 4
   
-  writeLines(modify(pool1_lines_pos[2], run_order), file_conn) # Pool 1
-  writeLines(modify(pool1_lines_neg[2], run_order), file_conn)
+  writeLines(modify(pool1_lines_pos[pool_tally], run_order), file_conn) # Pool 1
+  writeLines(modify(pool1_lines_neg[pool_tally], run_order), file_conn)
   run_order <- run_order + 1
   
-  writeLines(modify(pool2_lines_pos[2], run_order), file_conn) # Pool 2
-  writeLines(modify(pool2_lines_neg[2], run_order), file_conn)
+  writeLines(modify(pool2_lines_pos[pool_tally], run_order), file_conn) # Pool 2
+  writeLines(modify(pool2_lines_neg[pool_tally], run_order), file_conn)
   run_order <- run_order + 1
+  pool_tally <- pool_tally + 1
   
   # If <60 samples in the first rack: SKIP until the 1st PFAS curve
-  if (split1) { # If split1 is false, do first part in one batch. Skip until the PFAS curve
+  if (split1) {
+    # If split1 is false, do first part in one batch. Skip until the PFAS curve
     # 2 of 4 groups of 40 study samples (batch_size = 40) #########################################################
-    for (i in ((batch_size+1):(batch_size*2))) { #41-80
+    for (i in ((batch_size + 1):(batch_size * 2))) {
+      #41-80
       
       writeLines(modify(study_sample_lines_pos[i], run_order), file_conn)
       writeLines(modify(study_sample_lines_neg[i], run_order), file_conn)
       
       # If this sample is flagged for PFAS MSMS, add those lines
       if (study_samples$pfms[i] == TRUE) {
-        
         # Find which position in the pfas_ms2_positions list this sample corresponds to
-        pos_index <- which(pfas_ms2_positions == study_samples$pos384[i])
+        pos_index <-
+          which(pfas_ms2_positions == study_samples$pos384[i])
         
-        writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"), file_conn)
-        writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"), file_conn)
+        writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"),
+                   file_conn)
+        writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"),
+                   file_conn)
       }
       
-      # Same for non-PFAS MSMS 
+      # Same for non-PFAS MSMS
       if (study_samples$nonpfms[i] == TRUE) {
-        
         # Find which position in the pfas_ms2_positions list this sample corresponds to
-        pos_index <- which(nonpfas_ms2_positions == study_samples$pos384[i])
+        pos_index <-
+          which(nonpfas_ms2_positions == study_samples$pos384[i])
         
-        writeLines(modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
-        writeLines(modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
+        writeLines(modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"),
+                   file_conn)
+        writeLines(modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"),
+                   file_conn)
       }
       run_order <- run_order + 1
     }
     ################################################################################## End study sample chunk 2 of 4
     
-    writeLines(modify(pool1_lines_pos[3], run_order), file_conn) # Pool 1
-    writeLines(modify(pool1_lines_neg[3], run_order), file_conn)
+    writeLines(modify(pool1_lines_pos[pool_tally], run_order), file_conn) # Pool 1
+    writeLines(modify(pool1_lines_neg[pool_tally], run_order), file_conn)
     run_order <- run_order + 1
     
-    writeLines(modify(pool2_lines_pos[3], run_order), file_conn) # Pool 2
-    writeLines(modify(pool2_lines_neg[3], run_order), file_conn)
+    writeLines(modify(pool2_lines_pos[pool_tally], run_order), file_conn) # Pool 2
+    writeLines(modify(pool2_lines_neg[pool_tally], run_order), file_conn)
     run_order <- run_order + 1
+    pool_tally <- pool_tally + 1
     
   }
   
@@ -1309,12 +1415,13 @@ write_sequence <- function(params) {
   ################################################################################
   
   # # 1 instrument blank - before Cal Curve
-  writeLines(modify(blank_lines_pos[2], run_order), file_conn) 
+  writeLines(modify(blank_lines_pos[2], run_order), file_conn)
   writeLines(modify(blank_lines_neg[2], run_order), file_conn)
   run_order <- run_order + 1
   
   # CAL CURVE !!!! # changed to loop 5/29
-  for (i in 1:length(cal_curve_lines_pos)) { # should be 8
+  for (i in 1:length(cal_curve_lines_pos)) {
+    # should be 8
     writeLines(modify(cal_curve_lines_pos[i], run_order), file_conn)
     writeLines(modify(cal_curve_lines_neg[i], run_order), file_conn)
     run_order <- run_order + 1
@@ -1327,109 +1434,138 @@ write_sequence <- function(params) {
   
   ################################################################################
   
-  ## SKIP TO 3rd PFAS curve if only one study rack
+  ## SKIP TO 3rd PFAS curve if only one study rack for whole study
   if (study_racks == 2) {
-    
-    writeLines(modify(pool1_lines_pos[4], run_order), file_conn) # Pool 1
-    writeLines(modify(pool1_lines_neg[4], run_order), file_conn)
+    writeLines(modify(pool1_lines_pos[pool_tally], run_order), file_conn) # Pool 1
+    writeLines(modify(pool1_lines_neg[pool_tally], run_order), file_conn)
     run_order <- run_order + 1
     
-    writeLines(modify(pool2_lines_pos[4], run_order), file_conn) # Pool 2
-    writeLines(modify(pool2_lines_neg[4], run_order), file_conn)
+    writeLines(modify(pool2_lines_pos[pool_tally], run_order), file_conn) # Pool 2
+    writeLines(modify(pool2_lines_neg[pool_tally], run_order), file_conn)
     run_order <- run_order + 1
+    pool_tally <- pool_tally + 1
     
-    batch_size <- second_half_size 
+    batch_size <- second_half_size
     # Again, this only runs if there are two study racks.
     # Again, batch_size will be the FULL second rack if there are less than 60 samples in the rack.
     # batch_size will be HALF the second rack if there are 60 or more samples.
     
     # 3 of 4 groups of 40 study samples (batch_size = 40) ######################################
-    for (i in ((2*batch_size+1):(batch_size*3))) { #81-120
+    for (i in ((2 * batch_size + 1):(batch_size * 3))) {
+      #81-120
       
       writeLines(modify(study_sample_lines_pos[i], run_order), file_conn)
       writeLines(modify(study_sample_lines_neg[i], run_order), file_conn)
       
       # If this sample is flagged for PFAS MSMS, add those lines
       if (study_samples$pfms[i] == TRUE) {
-        
         # Find which position in the pfas_ms2_positions list this sample corresponds to
-        pos_index <- which(pfas_ms2_positions == study_samples$pos384[i])
+        pos_index <-
+          which(pfas_ms2_positions == study_samples$pos384[i])
         
-        writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"), file_conn)
-        writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"), file_conn)
+        writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"),
+                   file_conn)
+        writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"),
+                   file_conn)
       }
       
-      # Same for non-PFAS MSMS 
+      # Same for non-PFAS MSMS
       if (study_samples$nonpfms[i] == TRUE) {
-        
         # Find which position in the pfas_ms2_positions list this sample corresponds to
-        pos_index <- which(nonpfas_ms2_positions == study_samples$pos384[i])
+        pos_index <-
+          which(nonpfas_ms2_positions == study_samples$pos384[i])
         
-        writeLines(modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
-        writeLines(modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
+        writeLines(modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"),
+                   file_conn)
+        writeLines(modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"),
+                   file_conn)
       }
       run_order <- run_order + 1
     }
     ################################################################################## End study sample chunk 3 of 4
-    
+    # If <60 samples in the second rack: SKIP this section
     if (split2) {
-      writeLines(modify(pool1_lines_pos[5], run_order), file_conn) # Pool 1
-      writeLines(modify(pool1_lines_neg[5], run_order), file_conn)
+      # If split2 is false, do second part in one batch. Skip until the PFAS curve
+      writeLines(modify(pool1_lines_pos[pool_tally], run_order), file_conn) # Pool 1
+      writeLines(modify(pool1_lines_neg[pool_tally], run_order), file_conn)
       run_order <- run_order + 1
       
-      writeLines(modify(pool2_lines_pos[5], run_order), file_conn) # Pool 2
-      writeLines(modify(pool2_lines_neg[5], run_order), file_conn)
+      writeLines(modify(pool2_lines_pos[pool_tally], run_order), file_conn) # Pool 2
+      writeLines(modify(pool2_lines_neg[pool_tally], run_order), file_conn)
       run_order <- run_order + 1
+      pool_tally <- pool_tally + 1
       
       # 4 of 4 groups of 40 study samples (batch_size = 40) #######################################
-      for (i in ((3*batch_size+1):(batch_size*4))) { #121-160
+      for (i in ((3 * batch_size + 1):(batch_size * 4))) {
+        #121-160
         
         writeLines(modify(study_sample_lines_pos[i], run_order), file_conn)
         writeLines(modify(study_sample_lines_neg[i], run_order), file_conn)
         
         # If this sample is flagged for PFAS MSMS, add those lines
         if (study_samples$pfms[i] == TRUE) {
-          
           # Find which position in the pfas_ms2_positions list this sample corresponds to
-          pos_index <- which(pfas_ms2_positions == study_samples$pos384[i])
+          pos_index <-
+            which(pfas_ms2_positions == study_samples$pos384[i])
           
-          writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"), file_conn)
-          writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"), file_conn)
+          writeLines(modify(pfas_msms_lines_pos[pos_index], run_order, msms_type = "PFAS"),
+                     file_conn)
+          writeLines(modify(pfas_msms_lines_neg[pos_index], run_order, msms_type = "PFAS"),
+                     file_conn)
         }
         
-        # Same for non-PFAS MSMS 
+        # Same for non-PFAS MSMS
         if (study_samples$nonpfms[i] == TRUE) {
-          
           # Find which position in the pfas_ms2_positions list this sample corresponds to
-          pos_index <- which(nonpfas_ms2_positions == study_samples$pos384[i])
+          pos_index <-
+            which(nonpfas_ms2_positions == study_samples$pos384[i])
           
-          writeLines(modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
-          writeLines(modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"), file_conn)
+          writeLines(
+            modify(nonpfas_msms_lines_pos[pos_index], run_order, msms_type = "nonPFAS"),
+            file_conn
+          )
+          writeLines(
+            modify(nonpfas_msms_lines_neg[pos_index], run_order, msms_type = "nonPFAS"),
+            file_conn
+          )
         }
         run_order <- run_order + 1
       }
       ################################################################################## End study sample chunk 4 of 4
-    } 
+    } # end of if split2
     
-    # RETURN here if only one chunk for second half
-    writeLines(modify(pool1_lines_pos[6], run_order), file_conn) # Pool 1
-    writeLines(modify(pool1_lines_neg[6], run_order), file_conn)
+    writeLines(modify(pool1_lines_pos[pool_tally], run_order), file_conn) # Pool 1
+    writeLines(modify(pool1_lines_neg[pool_tally], run_order), file_conn)
     run_order <- run_order + 1
     
-    writeLines(modify(pool2_lines_pos[6], run_order), file_conn) # Pool 2
-    writeLines(modify(pool2_lines_neg[6], run_order), file_conn)
+    writeLines(modify(pool2_lines_pos[pool_tally], run_order), file_conn) # Pool 2
+    writeLines(modify(pool2_lines_neg[pool_tally], run_order), file_conn)
     run_order <- run_order + 1
     
-  } # RESUME if only one study rack.
+  } # RESUME if only one study rack for second half
+  
+  # Pool number check
+  if (pool_tally == each_final_pool_count) {
+    cat("Correct number of pools printed")
+  } else {
+    print(
+      paste(
+        "Incorrect number of pools, expected ",
+        each_final_pool_count,
+        " each, printed",
+        (pool_tally)
+      )
+    )
+  }
   
   ## 7/28?? ADD 3 PFAS CURVE HERE (3 of 3)
   
   # 1 AMAP - out of 1
-  writeLines(modify(amap_lines_pos[1], run_order), file_conn) 
+  writeLines(modify(amap_lines_pos[1], run_order), file_conn)
   writeLines(modify(amap_lines_neg[1], run_order), file_conn)
   run_order <- run_order + 1
   
-  # MDL --- DELETED --- keeping commented in case 
+  # MDL --- DELETED --- keeping commented in case
   # 1 MDL - extra cal curve (auto-selected, comment out if re-instating this)
   # for (i in 1:nrow(mdls)) { #should be 1
   #   writeLines(modify(mdl_lines_pos[i], run_order), file_conn)
@@ -1453,3 +1589,4 @@ write_sequence <- function(params) {
   
   return(invisible(TRUE)) # this big function is not meant to return anyting, just generate csv
 }
+
