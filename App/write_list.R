@@ -227,16 +227,25 @@ write_sequence <- function(params) {
   # OPTIONAL - if nist_count == 0
   
   ###  STUDY SAMPLES ############
-  pattern_a <- "^A\\d{7}$"
-  pattern_k <- "^K\\d{7}$"
-  study_samples <- final_data[grepl(pattern_a, final_data$Sample_ID) | grepl(pattern_k, final_data$Sample_ID), ]
+  # pattern_a <- "^A\\d{7}$"
+  # pattern_k <- "^K\\d{7}$" #CHANGE 8/8
+  study_samples <- final_data[final_data$sampletype == 'Study_Sample', ]
   study_sample_count <- nrow(study_samples)
+  
+  print(paste("Study samples found:", study_sample_count))
+  
+  # DEBUG: Check if study_samples is empty
+  if(study_sample_count == 0) {
+    print("No study samples found!")
+  }
   
   ### ORDER STUDY SAMPLES BASED ON USER INPUT changed 7/31 #################################
   order_column <- if (ordering_preference == "byrow") {
     "Row_order_by_plate"
+    print("Ordering study samples by row")
   } else {
     "Col_order_by_plate"
+    print("Ordering study samples by column")
   }
   
   ordered_study_samples <- final_data[order(final_data[[order_column]]), ]
@@ -246,6 +255,8 @@ write_sequence <- function(params) {
   # If 60+: split in half
   # If <60: do only one chunk
   
+  ## ERROR here? ----------------------------------------
+  
   # Separate and group by study sample plate
   # Find all unique endings (last character) of pos96 column
   unique_endings <- study_samples %>%
@@ -254,23 +265,32 @@ write_sequence <- function(params) {
     unique() %>%
     sort()
   
+  print(paste("Unique racks found:", paste(unique_endings, collapse = ", ")))
+  
+  
   ## For each rack number in study_samples (expecting 2),
   ## create new df rack#_samples with the samples from that rack only
   rack_samples_list <- list()
   
-  for(ending in unique_endings) {
-    # Filter samples and store in the list with a named entry
-    rack_df <- study_samples %>% filter(str_ends(pos96, ending))
-    rack_samples_list[[paste0("rack", ending, "_samples")]] <- rack_df
-    cat(paste0("rack", ending, "_samples: ", nrow(rack_df), " rows\n"))
+  # DEBUG: Only proceed if we have endings
+  if(length(unique_endings) > 0) {
+    for(ending in unique_endings) {
+      # Filter samples and store in the list with a named entry
+      rack_df <- study_samples %>% filter(str_ends(pos96, ending))
+      rack_samples_list[[paste0("rack", ending, "_samples")]] <- rack_df
+      print(paste0("rack", ending, "_samples: ", nrow(rack_df), " rows"))
+    }
+  } else {
+    print("No unique endings found - cannot create racks")
   }
   
   study_racks <- length(rack_samples_list)
+  print(paste("Final study_racks count:", study_racks))
   
   # Based on number of racks found, then size of each rack.
   if(study_racks == 2) {
     split1 <- TRUE
-    cat("2 study racks found")
+    print("2 study racks found")
     rack1 <- rack_samples_list[[1]]
     rack1_num <- nrow(rack1)
     first_half_size <- rack1_num/2
@@ -291,7 +311,7 @@ write_sequence <- function(params) {
     }
     
   } else if (study_racks == 1) {
-    cat("Only 1 study rack found")
+    print("Only 1 study rack found")
     split1 <-TRUE
     rack1 <- rack_samples_list[[1]]
     rack1_num <- nrow(rack1)
@@ -301,33 +321,13 @@ write_sequence <- function(params) {
       split1 <- FALSE
       first_half_size <- rack1_num
     }
-  } else if (study_racks == 0) {
-    cat("Error occurred. No study racks found in grouping process.")
+  } else if (study_racks == 0) { # ERROR HERE
+    print("Error occurred. No study racks found in grouping process.")
   } else if (study_racks == 3) {
-    cat("3 study racks found. Not coded yet!")
+    print("3 study racks found. Not coded yet!")
   }
   
-  # Creates: (for a normal run):
-  # rack1_samples: 80 obs
-  # rack2_samples: 80 obs
-  
-  #Could be any of the following:
-  #rack1_samples: 50 obs
-  
-  #rack1_samples: 80 obs
-  #rack2_samples: 70 obs
-  
-  #rack1_samples: 80 obs
-  #rack2 samples: 40 obs
-  
-  ## WHAT IF it's rack2_samples only?
-  # Or rack2_samples and rack3_samples?
-  # What if there are 3 study sample plates? (unlikely, but maybe later?) ----
-  
-  # If 60+: split in half
-  # If <60: do only one chunk
-  
-  # Extra - count totals for next part and to check
+   # Extra - count totals for next part and to check
   total_samples <- cc_count + water_count + amap_count + nist_count + study_sample_count
   
   if(total_count == total_samples) {
@@ -638,20 +638,21 @@ write_sequence <- function(params) {
   
   # New - check for 12 pools
   if (pool_count == 12) {
-    cat("Found 12 pools")
-  } else {
-    warning(paste("Expected 12 pools but found", pool_count, "- runorder not assigned"))
-  }
+    print("Found 12 pools")
+  } #else {
+    #warning(paste("Expected 12 pools but found", pool_count, "- runorder not assigned"))
+  #}
   
   # # Check for 20 pools
-  # if (pool_count == 20) {
+  if (pool_count == 20) {
   #   pools1$runorder <- sprintf("%02d", 1:10)
   #   pools2$runorder <- sprintf("%02d", 1:10)
-  #   cat("Found 20 pools")
-  #   #} else {
+     print("Found 20 pools")
+  } #else {
   #   #warning(paste("Expected 20 pools but found", pool_count, "- runorder not assigned"))
-  # }
+  #}
   # 
+  
   ############ POOL 1 ################################
   
   # Vector for storing lines
@@ -981,7 +982,7 @@ write_sequence <- function(params) {
   
   all_positions <- c(pfas_ms2_positions, nonpfas_ms2_positions)
   
-  cat("Printing positions for MSMS locations (verify all are study samples):\n")
+  print("Printing positions for MSMS locations (verify all are study samples):\n")
   
   # Loop through each position and print the sampletype
   for (pos in all_positions) {
@@ -1275,7 +1276,7 @@ write_sequence <- function(params) {
     writeLines(modify(nist_lines_neg[1], run_order), file_conn)
     run_order <- run_order + 1
   } else {
-    cat("No NIST sample identified in batch.\n")
+    print("No NIST sample identified in batch.\n")
   }
   
   ####### POOL ##########################################
@@ -1546,7 +1547,7 @@ write_sequence <- function(params) {
   
   # Pool number check
   if (pool_tally == each_final_pool_count) {
-    cat("Correct number of pools printed")
+    print("Correct number of pools printed")
   } else {
     print(
       paste(

@@ -4,27 +4,15 @@
 ##########################################################################################################
 
 ## TO-DO ####
-#8/5 error on main lab computer:
-# 6 ----- GENERATING SEQUENCE LIST ----- 
 
 #8/8 how to address: the pool count thing was a cosmetic error, not real error.
+# Last thing printed: 
 
+# [1] "Study samples found: 192"
+# [1] "Ordering study samples by row"
 
-#   Error occurred. No study racks found in grouping process.[1] "Some samples were not identified. rows of dataframe = 197 and sample types added together =  17"
-# Found 20 poolsWarning in write_sequence(params) :
-#   Expected 12 pools but found 20 - runorder not assigned
-
-# [DEBUG] ERROR in write_sequence(): replacement has 1 row, data has 0 
-# [DEBUG] ERROR: Output file was not created at R:\diwalke\LC\Run_Lists\Sequence_Generator_July25\Trash/CLUTEST_07_250805_C18.csv 
-# [DEBUG]  ----- End of server.R -----  
-
-#8/4/25 when run on Ralph computer:
-
-# [DEBUG] ERROR: Cannot write to output directory: Error in file(file, ifelse(append, "a", "w")) : 
-#   cannot open the connection
-
-###could be due to the network drive permission error (cannot save to R: from RStudio anymore)
-
+# trying to fix filepaths \ - done
+# trying to fix most recent error - Error generating sequence: argument 1 is not a vector
 
 ############### NOTES ABOUT SAMPLE LOGIC BY TYPE
 
@@ -641,7 +629,7 @@ server <- function(input, output, session) {
       }
     }
     
-    # 7/21: add reactive message 
+    # 7/21: add reactive message ## CHECK WHERE IS THIS?? --------------------------------
     output$order_message <- renderUI({
       order_text <- switch(order_pattern(),
                            "bycol" = "column of each plate.",
@@ -1116,18 +1104,19 @@ server <- function(input, output, session) {
     study <- values$run_info$study
     
     endpath <- sprintf("Batch_%s_%s", batch, date)
-    suggested_project_path <- sprintf('E:/Projects/%s_%s_%s/1-Raw_Files/%s/', study, date, machine, endpath) 
+    suggested_project_path <- sprintf(r'(E:\Projects\%s_%s\1-Raw_Files\%s\)', study, machine, endpath) ## REMOVED DATE 8/8
     
     
     if (machine == "C18") {
-      suggested_method_folder <- 'C:/Xcalibur/methods/Aria_C18_Methods'
+      suggested_method_folder <- r'(C:\Xcalibur\methods\Aria_C18_Methods)'
       name <- 'RALPH'
     } else if (machine == "HILIC") {
-      suggested_method_folder <- 'C:/Xcalibur/methods/Aria Methods'
+      suggested_method_folder <- r'(C:\Xcalibur\methods\Aria Methods)'
       name <- 'NANCY'
     }
     
-    suggested_output_path <- sprintf('R:/diwalke/1-RAW Files/230908-RawFiles_LC-Exploris120-%s/%s_%s_%s/3-Sequence_Files', name, study, date, machine)
+    suggested_output_path <- sprintf(r'(R:\diwalke\1-RAW Files\230908-RawFiles_LC-Exploris120-%s\%s_%s\3-Sequence_Files)', name, study, machine) 
+    #REMOVED DATE 8/8
     
     updateTextInput(session, "project_path", value = suggested_project_path)
     updateTextInput(session, "method_folder", value = suggested_method_folder) 
@@ -1307,6 +1296,8 @@ server <- function(input, output, session) {
     # Update QAQCS ####
     ## FIXED 7/29 
 
+    ### INSERT aN IF STATEMENT HERE  - if just a test, do not run this chunk --------------------------------
+    # if () {
     tryCatch({
       wb <- openxlsx::loadWorkbook(q_path)
     }, error = function(e) {
@@ -1343,6 +1334,7 @@ server <- function(input, output, session) {
     # Save the workbook
     openxlsx::saveWorkbook(wb2, s_path, overwrite = TRUE)
     debug_log("Successfully updated Samples.xlsx")
+    #} END IF STATEMENT ---------------------
     
     #######################################################################
     
@@ -1420,6 +1412,7 @@ server <- function(input, output, session) {
       return()
     })
     
+    debug_log(paste("Instrument method folder:", method_folder)) #From shiny input
     
     debug_log(paste("5 ----- OUTPUT CHECK -----"))
 
@@ -1433,7 +1426,7 @@ server <- function(input, output, session) {
     }
       
     # Default folder/sequence filename
-    sequence_filepath <- file.path(directory, filename_value)
+    sequence_filepath <- paste0(directory, "\\", filename_value) #CHANGED 8/8
     
     # Check if file exists, and if so, update sequence_filepath to unique name
     sequence_filepath <- get_unique_filename(sequence_filepath) 
@@ -1449,7 +1442,7 @@ server <- function(input, output, session) {
       output_dir <- dirname(sequence_filepath)
       
       if(!dir.exists(output_dir)) {
-        debug_log(paste("WARNING: Output directory doesn't yet exist and will be created.", output_dir))
+        debug_log(paste("WARNING: Output directory doesn't yet exist and will be created."))
         create_result <- try(dir.create(output_dir, recursive = TRUE))
         if(inherits(create_result, "try-error")) {
           debug_log(paste("ERROR: Failed to create output directory:", geterrmessage()))
