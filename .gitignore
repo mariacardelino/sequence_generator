@@ -1,0 +1,4 @@
+*.Rhistory
+*.RData
+App/.Rhistory
+App/.RData
