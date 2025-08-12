@@ -12,7 +12,6 @@
 # [1] "Ordering study samples by row"
 
 # trying to fix filepaths \ - done
-# trying to fix most recent error - Error generating sequence: argument 1 is not a vector
 
 ############### NOTES ABOUT SAMPLE LOGIC BY TYPE
 
@@ -86,7 +85,7 @@ server <- function(input, output, session) {
   # Initialize all reactive values at the beginning ######
   id_container <- reactiveVal(NULL)  # container to store the df as we go along
   debug_messages <- reactiveVal("")  # For debugging
-  order_pattern <- reactiveVal("bycol") #7/30 moved to top
+  order_pattern <- reactiveVal("bycol") #7/30 moved to top - default
   
   # Combined reactive values for all tabs
   values <- reactiveValues(
@@ -115,6 +114,10 @@ server <- function(input, output, session) {
       output_path = NULL
     )
   )
+  
+  # DEFAULT REACTIVE VALUES FOR ORDERING
+  order_pattern <- reactiveVal("byrow")
+  detected_order_pattern <- reactiveVal("byrow")
   
   #### PART ONE: MICRONIC PLATE SCAN DATA #########################################################################################
   
@@ -541,8 +544,6 @@ server <- function(input, output, session) {
   
   #### TAB 3: SAMPLE TYPES #########################################################################################
   
-  
-  
   # MATCH SAMPLES LOGIC #########################
   # This is the Fetch sample ID button.
   observeEvent(input$match_samples, {
@@ -558,17 +559,16 @@ server <- function(input, output, session) {
       current_data$Sample_ID <- NA_character_
     }
     
-    # Create vectors to track positions for ordering analysis
-    matched_ids <- c()
-    matched_positions <- c()
+    #Track positions for ordering analysis
+    inventory_loc <- c()
     
     # Process each row according to its sampletype #######################
     for (i in 1:nrow(current_data)) {
-      matrix_id <- current_data$ID[i] #get matrix ID (ex: K0876323, NA for empty or QAQC)
+      matrix_id <- current_data$ID[i] #get matrix ID (ex: K0876323)
       
       # First - skip empty IDs
       if (is.na(matrix_id) || matrix_id == "") {
-        current_data$Sample_ID[i] <- NA 
+        current_data$Sample_ID[i] <- NA # IF MATRIX ID originally NA, make sample ID NA.
         next
       }
       
@@ -578,30 +578,24 @@ server <- function(input, output, session) {
       if (sample_type == "QAQC") {
         match_row <- which(qaqc_inventory$Matrix_ID == matrix_id) 
         if (length(match_row) > 0 ) { 
-          current_data$Sample_ID[i] <- qaqc_inventory$Sample_ID[match_row[1]] #in case repeat copy?
-          # Store for ordering analysis
-          matched_ids <- c(matched_ids, matrix_id)
-          matched_positions <- c(matched_positions, current_data$pos384[i])
-          
-        } else {
-          # If no match found, leave empty
-          current_data$Sample_ID[i] <- ""
+          current_data$Sample_ID[i] <- qaqc_inventory$Sample_ID[match_row[1]] #in case repeat?
         }
         
       } else if (sample_type == "Study_Sample") {
-        match_row <- which(sample_inventory$Matrix_ID == matrix_id) 
+        match_row <- which(sample_inventory$Matrix_ID == matrix_id) # where in the inventory does it match?
+        
         if (length(match_row) > 0) {
-          current_data$Sample_ID[i] <- sample_inventory$Sample_ID[match_row[1]] #in case repeat copy
-          # Store for ordering analysis
-          matched_ids <- c(matched_ids, matrix_id)
-          matched_positions <- c(matched_positions, current_data$pos384[i])
+          current_data$Sample_ID[i] <- sample_inventory$Matrix_ID[match_row[1]] # collect MATRIX ID. changed 8/12
+          
+          # Store location for ordering analysis
+          inventory_loc <- c(inventory_loc, match_row)
           
         } else {
           # If no match found, leave empty
           current_data$Sample_ID[i] <- ""
         }
       }
-    } # END LOOP THROUGH MATRIX ID CHECK! 
+    } # END LOOP THROUGH MATRIX ID CHECK!
     
     # Update id_container with the modified data!!
     id_container(current_data)
@@ -611,43 +605,82 @@ server <- function(input, output, session) {
     # If no sample ID was found in inventory, Sample_ID will be ""
     
     #### Are samples ordered by row or column? ########################################################################################
+    observeEvent(inventory_loc, { # added 8/12!
+      
+      if (length(inventory_loc) > 1) { 
+        diffs <- diff(inventory_loc)
+        
+        # LOGIC: Check pattern of changes
+          # inventory_loc is currenty same order as current_data; plate 1 a1, a2, a3.. a12, b1 ... (row by row)
+          # if the numbers in inventory_loc more or less go up one at a time, it's organized by row
+          # if they skip around, it's organized by column
+        
+        evidence_for_row_by_row <- sum(diffs == 1)
+        evidence_for_col_by_col <- sum(diffs == 12)
+        
+        detected <- if (evidence_for_row_by_row > 2 * evidence_for_col_by_col) {
+          "byrow"
+        } else if (evidence_for_col_by_col > 2 * evidence_for_row_by_row) {
+          "bycol"
+        } else {
+          "uk"
+        }
+        
+        # Default to byrow if unclear
+        if (detected == "uk") {
+          order_pattern("byrow")
+          cat("Sample order unclear, defaulting to by row. Change in app if desired\n")
+        } else {
+        detected_order_pattern(detected)
+        order_pattern(detected)
+        }
+        
+      } #end the inventory location if statement
+    }, ignoreInit = TRUE) # end observeEvent(inventory_loc, 
     
-    if (length(matched_positions) >= 4) {
-      # Extract row letters and column numbers
-      rows <- substr(matched_positions, 1, 1)
-      cols <- as.numeric(substr(matched_positions, 2, nchar(matched_positions)))
-      
-      # Check pattern of changes
-      row_changes <- sum(diff(match(rows, LETTERS)) != 0, na.rm=TRUE)
-      col_changes <- sum(diff(cols) != 0, na.rm=TRUE)
-      
-      # Determine ordering pattern and notify
-      if (row_changes > col_changes) { 
-        order_pattern("byrow") 
-      } else {
-        order_pattern("bycol")
+    
+    # Manual override: watch for changes to radio buttons
+    observeEvent(input$order_by, {
+      if (input$order_by == "Col_order_by_plate") {
+        order_pattern("bycol") # MANUAL OVERRIDE order_pattern
+      } else if (input$order_by == "Row_order_by_plate") {
+        order_pattern("byrow") # MANUAL OVERRIDE order_pattern
       }
-    }
+    })
     
-    # 7/21: add reactive message ## CHECK WHERE IS THIS?? --------------------------------
-    output$order_message <- renderUI({
-      order_text <- switch(order_pattern(),
-                           "bycol" = "column of each plate.",
-                           "byrow" = "row of each plate.",
-                           "an unknown pattern")
-      
-      tags$div(
-        style = "font-size: 16px; font-weight: 500; color: #333;",
-        paste("The sample inventory appears to be organized by", order_text)
+    # Radio buttons UI defaults to detected order
+    output$order_by_ui <- renderUI({
+      radioButtons(
+        "order_by", "Manually set injection order:", 
+        choices = c("Order by column" = "Col_order_by_plate", 
+                    "Order by row" = "Row_order_by_plate"),
+        selected = ifelse(detected_order_pattern() == "bycol", 
+                          "Col_order_by_plate", 
+                          "Row_order_by_plate"),
+        inline = TRUE
       )
     })
     
-    ########################################################################################################################################
-    
+    # Order message only depends on detection, never user input
+    output$order_message <- renderUI({
+      order_text <- switch(detected_order_pattern(),
+                           "bycol" = "in groups of columns (A1, B1, C1 ...)",
+                           "byrow" = "in groups of rows (A1, A2, A3 ...)",
+                           "uk" = "in an unknown way; defaulting to injection by row (A1, A2, A3 ...)"
+      )
+      
+      tags$div(
+        style = "font-size: 16px; font-weight: 500; color: #333;",
+        paste("The sample inventory appears to be organized", order_text)
+      )
+    })
+
     # Show success message
     showNotification("Sample ID matching completed", type = "message")
     values$samples_fetched <- TRUE
-  }) ##### Match function complete
+    
+  }) ##### Match function complete ##########################################################################################
+  
   
   #count matches - UI for right column ##################
   output$matchstatus <- renderUI({
@@ -682,13 +715,6 @@ server <- function(input, output, session) {
           p(style = "margin: 0;", strong("QAQCs matched:"), " ", qaqc_ratio),
           p(style = "margin: 0; border-top: 1px solid #ddd; padding-top: 5px;", 
             strong("Total:"), " ", paste0(total_matched, " / ", total_rows))
-        ),
-        br(),
-        div(
-          style = "display: flex; gap: 10px; margin-top: 10px;",
-          actionButton("save_to_env", "Save df to R", class = "btn-success"),
-          actionButton("gototab4", "Next tab", class = "btn-primary", 
-                       style = "font-size: 16px; padding: 8px 20px;")
         )
       )
     } else {

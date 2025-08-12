@@ -239,16 +239,8 @@ write_sequence <- function(params) {
     print("No study samples found!")
   }
   
-  ### ORDER STUDY SAMPLES BASED ON USER INPUT changed 7/31 #################################
-  order_column <- if (ordering_preference == "byrow") {
-    "Row_order_by_plate"
-    print("Ordering study samples by row")
-  } else {
-    "Col_order_by_plate"
-    print("Ordering study samples by column")
-  }
-  
-  ordered_study_samples <- final_data[order(final_data[[order_column]]), ]
+  ### ORDER STUDY SAMPLES BY THE ORDER =-------------------- 8/12?
+  #accdientally deleted the order pattern assignment; next task is to add back here
   
   # 7/29: handle different sample sizes ####################################################
   # Expecting 80 samples per plate (2 plates)

@@ -33,13 +33,35 @@ data <- read_csv(file_path,
 
 return(d = data)
 } # END CSV READER FUNCTION
-load("Mapping/map.Rdata")  # loads 'df' (96-positions and orders) and 'map' (384-positions)
+# List of required packages
+required_packages <- c(
+  "openxlsx", "shinyjs", "tools",
+  "shiny", "readr", "dplyr", 
+  "plotly", "readxl", "shinyFiles", "stringr", "this.path"
+)
+
+# Install any that are missing
+for (pkg in required_packages) {
+  if (!require(pkg, character.only = TRUE)) {
+    install.packages(pkg, dependencies = TRUE)
+    library(pkg, character.only = TRUE)
+  } else {
+    library(pkg, character.only = TRUE)
+  }
+}
+
+# Set the wd to the folder the app is in - MORE ROBUST with this.path changed 7/29
+setwd(this.dir())
+
+load("App/Mapping/map.Rdata")  # loads 'df' (96-positions and orders) and 'map' (384-positions)
 
 ###########################################################################################
 # MANUALLY SET PATHS FOR TESTING 
-file_inputs <- list("R:/diwalke/LC/Run_Lists/Plate_Scans/CLU0120_Batch22_Rack43_20250710_093449.csv",
-                    "R:/diwalke/LC/Run_Lists/Plate_Scans/CLU0120_Batch22_Rack44_20250710_093538.csv", 
-                    "R:/diwalke/LC/Run_Lists/Plate_Scans/CLU0120_Batch22_QAQC_20250710_093734.csv", 
+
+
+file_inputs <- list("R:/diwalke/LC/Run_Lists/Plate_Scans/CLU0007-2_Batch3_Rack6_20250625_141058.csv",
+                    "R:/diwalke/LC/Run_Lists/Plate_Scans/CLU0007-2_Batch4_Rack7_20250627_125608.csv", 
+                    "R:/diwalke/LC/Run_Lists/Plate_Scans/CLU0007-2_Batch3_QAQC_20250625_141149.csv", 
                     NULL)
 
 plate_types <- list("Study_Sample", "Study_Sample", "QAQC", "NULL")
@@ -267,24 +289,41 @@ qaqc_inventory <- qaqcs
 sample_inventory <- samples
 
 #############################################################
-current_data <- all_racks
-  
-# Add Sample_ID column - will be filled in from inventory
+current_data <- all_racks # NO sample_ID column yet.
+
+# inventory_loc
+# [1] 726   6  86 166 246 326 406 486 566 646 736  16  96 176 256 336 416 496 576 656 746  26 106 186 266 346 426 506 586 666 756  36 116 196 276
+# [36] 356 436 516 596 676 766  46 126 206 286 366 446 526 606 686 776  56 136 216 296 376 456 536 616 696 786  66 146 226 306 386 466 546 626 706
+# [71] 796  76 156 236 316 396 476 556 636 716 727   7  87 167 247 327 407 487 567 647 737  17  97 177 257 337 417 497 577 657 747  27 107 187 267
+# [106] 347 427 507 587 667 757  37 117 197 277 357 437 517 597 677 767  47 127 207 287 367 447 527 607 687 777  57 137 217 297 377 457 537 617 697
+# [141] 787  67 147 227 307 387 467 547 627 707 797  77 157 237 317 397 477 557 637 717 807 808
+
+
+#experiment with changed order: 
+current_data <- current_data[order(current_data$Row_order_by_plate), ]
+
+# > inventory_loc
+# [1] 726 566 416 266 116 766 606 456 306 156   6 646 496 346 196  46 686 536 386 236  86 736 576 426 276 126 776 616 466 316 166  16 656 506 356
+# [36] 206  56 696 546 396 246  96 746 586 436 286 136 786 626 476 326 176  26 666 516 366 216  66 706 556 406 256 106 756 596 446 296 146 796 636
+# [71] 486 336 186  36 676 526 376 226  76 716 727 567 417 267 117 767 607 457 307 157 807   7 647 497 347 197  47 687 537 387 237 808  87 737 577
+# [106] 427 277 127 777 617 467 317 167  17 657 507 357 207  57 697 547 397 247  97 747 587 437 287 137 787 627 477 327 177  27 667 517 367 217  67
+# [141] 707 557 407 257 107 757 597 447 297 147 797 637 487 337 187  37 677 527 377 227  77 717
+
+# Add Sample_ID column if it doesn't exist
 if (!"Sample_ID" %in% names(current_data)) {
   current_data$Sample_ID <- NA_character_
 }
 
-# Create vectors to track positions for ordering analysis
-matched_ids <- c()
-matched_positions <- c()
+#Track positions for ordering analysis
+inventory_loc <- c()
 
 # Process each row according to its sampletype #######################
 for (i in 1:nrow(current_data)) {
-  matrix_id <- current_data$ID[i] #get matrix ID (ex: K0876323, NA for empty or QAQC)
+  matrix_id <- current_data$ID[i] #get matrix ID (ex: K0876323)
   
   # First - skip empty IDs
   if (is.na(matrix_id) || matrix_id == "") {
-    current_data$Sample_ID[i] <- NA 
+    current_data$Sample_ID[i] <- NA # IF MATRIX ID originally NA, make sample ID NA.
     next
   }
   
@@ -292,39 +331,51 @@ for (i in 1:nrow(current_data)) {
   sample_type <- current_data$sampletype[i]
   
   if (sample_type == "QAQC") {
-    # For QAQC samples, look up the Sample_ID in qaqcs dataframe
-    match_row <- which(qaqc_inventory$Matrix_ID == matrix_id) #INVENTORY
+    match_row <- which(qaqc_inventory$Matrix_ID == matrix_id) 
     if (length(match_row) > 0 ) { 
-      current_data$Sample_ID[i] <- qaqc_inventory$Sample_ID[match_row[1]] #in case repeat copy?
-      # Store for ordering analysis
-      matched_ids <- c(matched_ids, matrix_id)
-      matched_positions <- c(matched_positions, current_data$pos384[i])
-      
-    } else {
-      # If no match found, leave empty
-      current_data$Sample_ID[i] <- ""
+      current_data$Sample_ID[i] <- qaqc_inventory$Sample_ID[match_row[1]] #in case repeat?
     }
-    
+      
   } else if (sample_type == "Study_Sample") {
-    # For study samples, Sample_ID and Matrix_ID in inventory are the same
-    match_row <- which(sample_inventory$Matrix_ID == matrix_id) #INVENTORY
+    match_row <- which(sample_inventory$Matrix_ID == matrix_id) # where in the inventory does it match?
+    
     if (length(match_row) > 0) {
-      current_data$Sample_ID[i] <- sample_inventory$Sample_ID[match_row[1]] #in case repeat copy
-      # Store for ordering analysis
-      matched_ids <- c(matched_ids, matrix_id)
-      matched_positions <- c(matched_positions, current_data$pos384[i])
+      current_data$Sample_ID[i] <- sample_inventory$Matrix_ID[match_row[1]] # collect MATRIX ID. changed 8/12
+      
+      # Store location for ordering analysis
+      inventory_loc <- c(inventory_loc, match_row)
       
     } else {
       # If no match found, leave empty
       current_data$Sample_ID[i] <- ""
     }
   }
-} # END LOOP THROUGH MATRIX ID CHECK! 
+} # END LOOP THROUGH MATRIX ID CHECK! # good
 
-# If the row is supposed to be empty (no tube), Sample_ID will be NA
-# If no sample ID was found in inventory, Sample_ID will be ""
+inventory_loc #check
 
-
-
-
+  diffs <- diff(inventory_loc)
+  
+  # LOGIC: Check pattern of changes
+  # inventory_loc is currenty same order as current_data; plate 1 a1, a2, a3.. a12, b1 ... (row by row)
+  # if the numbers in inventory_loc more or less go up one at a time, it's organized by row
+  # if they skip around, it's organized by column
+  
+  evidence_for_row_by_row <- sum(diffs == 1)
+  evidence_for_col_by_col <- sum(diffs == 12)
+  
+  detected <- if (evidence_for_row_by_row > 2 * evidence_for_col_by_col) {
+    "byrow"
+  } else if (evidence_for_col_by_col > 2 * evidence_for_row_by_row) {
+    "bycol"
+  } else {
+    "uk"
+  }
+  
+  # Default to byrow if unclear
+  if (detected == "uk") {
+    detected_order_pattern("byrow")
+    cat("Sample order unclear, defaulting to by row. Change in app if desired\n")
+  } else {
+    detected_order_pattern(detected)
 

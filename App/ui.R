@@ -85,13 +85,37 @@ ui <- fluidPage(
                        actionButton("match_samples", "Step 1: Match IDs to inventory", class = "btn-primary"),
                        actionButton("add_matrix_ids", "Step 2: Update inventory", class = "btn-info"),
                        br(), br(), 
-                       uiOutput("order_message"),
+                       div(
+                         style = "
+                            border: 1px solid #ccc;
+                            border-radius: 5px;
+                            padding: 15px;
+                            margin-bottom: 15px;
+                            background-color: #f9f9f9;
+                            margin-right: 20px; /* space between boxes */
+                          ",
+                         
+                         h4("Injection Order Settings", style = "margin-top: 0;"),
+                         
+                         # Detected order
+                         tags$b("Detected order (automatic):"),
+                         uiOutput("order_message"),
+                         br(),
+                         
+                         # Manual override
+                         tags$b("Manual override:"),
+                         radioButtons(
+                           "order_by", NULL,
+                           choices = c(
+                             "Order by column" = "Col_order_by_plate", 
+                             "Order by row" = "Row_order_by_plate"
+                           ),
+                           selected = "Row_order_by_plate",
+                           inline = TRUE
+                         )
+                       ), # END BOX FOR ORDER MESSAGES AND SELECTION
                        br(),
-                       radioButtons("order_by", "Manually set injection order:", 
-                                    choices = c("Order by column" = "Col_order_by_plate", 
-                                                "Order by row" = "Row_order_by_plate"),
-                                    selected = "Col_order_by_plate",
-                                    inline = TRUE)
+                       br(),
                    ),
                    uiOutput("matchstatus")
                )
