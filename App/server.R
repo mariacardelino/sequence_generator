@@ -611,9 +611,9 @@ server <- function(input, output, session) {
         diffs <- diff(inventory_loc)
         
         # LOGIC: Check pattern of changes
-          # inventory_loc is currenty same order as current_data; plate 1 a1, a2, a3.. a12, b1 ... (row by row)
-          # if the numbers in inventory_loc more or less go up one at a time, it's organized by row
-          # if they skip around, it's organized by column
+        # inventory_loc is currenty same order as current_data; plate 1 a1, a2, a3.. a12, b1 ... (row by row)
+        # if the numbers in inventory_loc more or less go up one at a time, it's organized by row
+        # if they skip around, it's organized by column
         
         evidence_for_row_by_row <- sum(diffs == 1)
         evidence_for_col_by_col <- sum(diffs == 12)
@@ -631,8 +631,8 @@ server <- function(input, output, session) {
           order_pattern("byrow")
           cat("Sample order unclear, defaulting to by row. Change in app if desired\n")
         } else {
-        detected_order_pattern(detected)
-        order_pattern(detected)
+          detected_order_pattern(detected)
+          order_pattern(detected)
         }
         
       } #end the inventory location if statement
@@ -674,7 +674,7 @@ server <- function(input, output, session) {
         paste("The sample inventory appears to be organized", order_text)
       )
     })
-
+    
     # Show success message
     showNotification("Sample ID matching completed", type = "message")
     values$samples_fetched <- TRUE
@@ -1281,7 +1281,7 @@ server <- function(input, output, session) {
     if (is.null(values$run_info$machine)) missing_values <- c(missing_values, "machine")
     if (is.null(values$run_info$position)) missing_values <- c(missing_values, "position")
     if (is.null(values$run_info$firstlast)) missing_values <- c(missing_values, "firstlast")
-
+    
     if (is.null(values$final_paths$project_path)) missing_values <- c(missing_values, "path")
     if (is.null(values$final_paths$method_folder)) missing_values <- c(missing_values, "method_folder")
     if (is.null(values$final_paths$output_path)) missing_values <- c(missing_values, "output_path")
@@ -1321,7 +1321,7 @@ server <- function(input, output, session) {
     
     # Update QAQCS ####
     ## FIXED 7/29 
-
+    
     ### INSERT aN IF STATEMENT HERE  - if just a test, do not run this chunk --------------------------------
     # if () {
     tryCatch({
@@ -1441,7 +1441,7 @@ server <- function(input, output, session) {
     debug_log(paste("Instrument method folder:", method_folder)) #From shiny input
     
     debug_log(paste("5 ----- OUTPUT CHECK -----"))
-
+    
     # Set output file path ##########################################################################
     directory <- output_path # From Shiny input
     debug_log(paste("Output folderpath:", directory)) 
@@ -1450,7 +1450,7 @@ server <- function(input, output, session) {
     if(!grepl("\\.csv$", filename_value)) {
       filename_value <- paste0(filename_value, ".csv")
     }
-      
+    
     # Default folder/sequence filename
     sequence_filepath <- paste0(directory, "\\", filename_value) #CHANGED 8/8
     
@@ -1522,7 +1522,7 @@ server <- function(input, output, session) {
           project_path = project_path,
           method_folder = method_folder,
           output_path = output_path,
-          ordering_preference = order_pattern()
+          order_pattern = order_pattern() #updated 8/13
         )
         
         # Call the function from write_list.R
@@ -1534,17 +1534,17 @@ server <- function(input, output, session) {
         debug_log(paste("ERROR in write_sequence():", e$message))
         showNotification(paste("Error generating sequence:", e$message), type = "error")
       }) # END TRY CATCH
-        
+      
       # Verify output file exists
       incProgress(0.9, detail = "Verifying output...")
-        
+      
       if(file.exists(sequence_filepath)) {
         debug_log(paste("SUCCESS: File created at", sequence_filepath))
         debug_log(paste("File size:", file.info(sequence_filepath)$size, "bytes"))
-          
+        
         # Store the path for UI updates
         values$generated_file_path <- sequence_filepath
-          
+        
         # Show success notification
         showNotification(
           paste0(
@@ -1560,10 +1560,10 @@ server <- function(input, output, session) {
       
       incProgress(1, detail = "Complete")
       
-      }) # end of withProgress indicator
+    }) # end of withProgress indicator
     
-     debug_log(" ----- End of server.R ----- ")
-     
+    debug_log(" ----- End of server.R ----- ")
+    
   }) #################### END 'WRITE LIST' OBSERVER ############################################################################################
   
 } # END SERVER 

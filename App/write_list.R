@@ -58,7 +58,7 @@ write_sequence <- function(params) {
   project_path <- params$project_path 
   method_folder <- params$method_folder 
   output_path <- params$output_path 
-  ordering_preference <- params$ordering_preference
+  order_pattern <- params$order_pattern
   
   # TRIM WHITE SPACE 
   final_data$Sample_ID <- trimws(final_data$Sample_ID, which = "left")
@@ -239,8 +239,16 @@ write_sequence <- function(params) {
     print("No study samples found!")
   }
   
-  ### ORDER STUDY SAMPLES BY THE ORDER =-------------------- 8/12?
-  #accdientally deleted the order pattern assignment; next task is to add back here
+  ### ORDER STUDY SAMPLES BY THE ORDER (detected or manual override, see server code) 
+  
+  order_column <- if (order_pattern == "byrow") {
+    "Row_order_by_plate"
+  } else {
+    "Col_order_by_plate"
+  }
+  ordered_study_samples <- final_data[order(final_data[[order_column]]), ]
+  # 7/29: handle different sample sizes ####################################################
+  
   
   # 7/29: handle different sample sizes ####################################################
   # Expecting 80 samples per plate (2 plates)
